@@ -1,0 +1,19 @@
+---
+title: "SMB_Fitness_PowerAnalysis"
+author: "Joe Gunn"
+date: "8/18/2020"
+output: html_document
+---
+## Libraries needed for analysis 
+```{r setup, include=FALSE}
+library(readxl)
+library(tidyverse)
+library(cowplot)
+library(pwr)
+```
+
+## Power Analyses for sample size
+```{r}
+
+pwr.anova.test(k = 2, f = 0.3, sig.level = 0.05, power = 0.8)
+```
