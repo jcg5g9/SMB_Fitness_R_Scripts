@@ -1,0 +1,64 @@
+---
+title: "SMB_Genomics_MAPS"
+author: "Joe Gunn"
+date: "9/11/2019"
+output: html_document
+---
+
+## Libraries needed for analysis
+```{r setup, echo = FALSE, include = FALSE}
+library(riverdist)
+library(sp)
+library(readxl)
+library(popgraph)
+library(tidyverse)
+library(gstudio)
+library(ade4)
+library(adegenet)
+library(cowplot)
+library(nlme)
+library(poppr)
+library(PopGenReport)
+library(maps)
+library(mapdata)
+library(stringr)
+library(rgdal)
+library(sf)
+library(ggsn)
+library(raster)
+library(lme4)
+library(factoextra)
+library(MASS)
+library(logihist)
+library(pophelper)
+library(ggpubr)
+library(DescTools)
+library(vegan)
+library(maptools)
+```
+
+## Read-in shape files
+```{r, include = FALSE}
+
+shape_state <- readOGR(dsn = "/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/raw_data/map_data/STATES", layer = "states") #shape file for the United States, with 
+
+ouachita_rivers <- readOGR(dsn = "/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/raw_data/map_data/ouachita_riverbasin_rivers", layer = "ouachita_riverbasin_Rivers")
+
+white_rivers <- readOGR(dsn = "/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/raw_data/map_data/white_riverbasin_rivers", layer = "white_riverbasin_Rivers")
+
+ark_rivers <- readOGR(dsn = "/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/raw_data/map_data/arkansas_riverbasin_Rivers", layer = "arkansas_riverbasin_Rivers")
+```
+
+
+## Build close-up Central Interior Highlands Map
+```{r}
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/map_building/ark_ouac_white_rivers_map.pdf", width = 9, height = 8) #creates a jpeg at customized resolution
+
+plot(shape_state, col=alpha("white", 0.3), border = "black", axes = T, ylim = c(30,38), xlim = c(-96,-91.1), cex.axis = 1.6)
+plot(ouachita_rivers, add = T, col="blue", border = T, axes = T, ylim = c(30,38), xlim = c(-96,-91), cex.axis = 2)
+plot(ark_rivers, add = T, col="red", border = T, axes = T, ylim = c(30,38), xlim = c(-96,-91), cex.axis = 2)
+plot(white_rivers, add = T, col="green", border = T, axes = T, ylim = c(30,38), xlim = c(-96,-91), cex.axis = 2)
+scalebar(200, xy = c(-96, 34.85), type = "bar", divs = 4, cex = 2)
+
+dev.off()
+```
