@@ -1,0 +1,57 @@
+---
+title: "SMB_Fitness_Sample_Analysis"
+author: "Joe Gunn"
+date: "12/15/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(readxl)
+library(tidyverse)
+library(cowplot)
+
+```
+
+```{r}
+smb_fit_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
+
+smb_fit_data_size_dist <- smb_fit_data[,c(1:22)]
+
+smb_fit_data_size_dist <- smb_fit_data_size_dist %>%
+  mutate(sample_id = factor(sample_id), river_code = factor(river_code),
+         sample_number = as.numeric(sample_number), date_collected = factor(date_collected),
+         range_id = factor(range_id), river = factor(river), sex = factor(sex),
+         meas_ints = factor(meas_ints), tl_alive = as.numeric(tl_alive), 
+         size_category = factor(size_category))
+
+smb_fit_num_per_size_total <- smb_fit_data_size_dist %>%
+  group_by(size_category) %>%
+  count() %>%
+  as.data.frame()
+
+smb_fit_num_per_size_by_river <- smb_fit_data_size_dist %>%
+  group_by(size_category, river) %>%
+  count() %>%
+  as.data.frame()
+
+
+smb_fit_size_dist_total <- ggplot(smb_fit_num_per_size_total, aes(x = size_category, y = n)) + 
+  geom_bar(stat = "identity", color = "black", fill = "grey") + 
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Size Category", y = "Number of Individuals")
+
+smb_fit_size_dist_river <- ggplot(smb_fit_num_per_size_by_river, aes(x = size_category, y = n, fill = river)) + 
+  geom_bar(stat = "identity", position = position_dodge(), color = "black") + 
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Size Category", y = "Number of Individuals") + 
+  scale_fill_manual(values = c("orchid1","sienna4")) +
+  theme(axis.text.y = element_blank()) +
+  theme(axis.title.y = element_blank()) +
+  theme(legend.position = c(0.8,0.8))
+
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/sample_visualization/total_sample_distribution.pdf", width = 12, height = 4)
+
+plot_grid(smb_fit_size_dist_total, smb_fit_size_dist_river, nrow = 1, labels = c("A","B"), label_size = 25)
+
+dev.off()
+```
