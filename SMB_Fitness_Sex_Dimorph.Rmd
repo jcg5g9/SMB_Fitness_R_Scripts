@@ -27,13 +27,10 @@ smb_fit_data_size_dist <- smb_fit_data_size_dist %>%
 ggplot(smb_fit_data_size_dist, aes(x = tl_dead, y = sl, color = sex, shape = river)) +
   geom_point()
 
-ggplot(smb_fit_data_size_dist, aes(x = tl_dead, y = ol, color = sex, shape = river)) +
+ggplot(smb_fit_data_size_dist, aes(x = tl_dead, y = hl, color = meas_ints)) +
   geom_point()
 
-ggplot(smb_fit_data_size_dist, aes(x = tl_dead, y = hl, color = sex, shape = river)) +
-  geom_point()
-
-ggplot(smb_fit_data_size_dist, aes(x = tl_dead, y = bd, color = sex, shape = river)) +
+ggplot(smb_fit_data_size_dist, aes(x = tl_dead, y = bd, color = meas_ints)) +
   geom_point()
 
 ggplot(smb_fit_data_size_dist, aes(x = tl_dead, y = mass_g, color = sex, shape = river)) +
@@ -51,5 +48,15 @@ smb_fit_bsug <- smb_fit_data_size_dist %>%
 
 ggplot(smb_fit_bsug, aes(x = tl_dead, y = mass_g, color = sex)) +
   geom_point()
+
+
+ggplot(smb_fit_data_size_dist, aes(x = tl_dead, y = ol, fill = meas_ints)) +
+  geom_point(aes(fill = meas_ints), size = 3, color = "black", pch = 21) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("lightyellow", "mediumpurple","forestgreen","deeppink2")) +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15))
+  
+
 
 ```
