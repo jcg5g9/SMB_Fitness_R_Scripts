@@ -24,4 +24,15 @@ oto_sample_list <- as.matrix(oto_sample_list)
 sample(oto_sample_list,12)
 
 
+joe_ages <- read_excel("../../raw_data/master_data/smbfit_master_data_working_joe.xlsx")
+
+smb_total <- nrow(joe_ages)
+
+joe_ages_error <- joe_ages %>%
+  count(joe_age_1 != joe_age_2)
+
+joe_error <- 22/smb_total #18.97%
+
+
+
 ```
