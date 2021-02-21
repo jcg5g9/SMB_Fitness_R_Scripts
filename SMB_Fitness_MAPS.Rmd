@@ -52,10 +52,10 @@ ark_rivers <- readOGR(dsn = "/Users/joegunn/Desktop/Grad_School_Stuff/Research/P
 
 ## Build close-up Central Interior Highlands Map
 ```{r}
-pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/map_building/ark_ouac_white_rivers_map.pdf", width = 9, height = 8) #creates a jpeg at customized resolution
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/map_building/ark_ouac_white_rivers_map.pdf", width = 9, height = 8) 
 
-plot(shape_state, col=alpha("white", 0.3), border = "black", axes = T, ylim = c(30,38), xlim = c(-96,-91.1), cex.axis = 1.6)
-plot(ouachita_rivers, add = T, col="blue", border = T, axes = T, ylim = c(30,38), xlim = c(-96,-91), cex.axis = 2)
+#plot(shape_state, col=alpha("white", 0.3), border = "black", axes = T, ylim = c(30,38), xlim = c(-96,-91.1), cex.axis = 1.6)
+plot(ouachita_rivers, col="blue", axes = T, ylim = c(30,38), xlim = c(-96,-91), cex.axis = 2)
 plot(ark_rivers, add = T, col="red", border = T, axes = T, ylim = c(30,38), xlim = c(-96,-91), cex.axis = 2)
 plot(white_rivers, add = T, col="green", border = T, axes = T, ylim = c(30,38), xlim = c(-96,-91), cex.axis = 2)
 scalebar(200, xy = c(-96, 34.85), type = "bar", divs = 4, cex = 2)

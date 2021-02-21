@@ -16,4 +16,12 @@ library(pwr)
 ```{r}
 
 pwr.anova.test(k = 2, f = 0.3, sig.level = 0.05, power = 0.8)
+
+oto_sample_list <- read_excel("../../raw_data/master_data/oto_sample_list.xlsx")
+oto_sample_list <- as.matrix(oto_sample_list)
+
+
+sample(oto_sample_list,12)
+
+
 ```
