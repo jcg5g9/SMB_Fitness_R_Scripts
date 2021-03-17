@@ -78,7 +78,7 @@ plotQ(smbfit_K2,
       pointsize = 4, 
       barbordercolour = "black",
       barbordersize = 0.1, 
-      outputfilename = "../../visualization/structure_results",
+      outputfilename = "../../visualization/structure_results/smbfit_structure",
       imgtype = "pdf",
       imgoutput = "sep",
       height = 10, width = 100)
