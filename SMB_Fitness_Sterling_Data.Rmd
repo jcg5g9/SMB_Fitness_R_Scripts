@@ -1,0 +1,20 @@
+---
+title: "SMB_Fitness_Sterling_Data"
+author: "Joe Gunn"
+date: "1/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(readxl)
+library(tidyverse)
+library(cowplot)
+```
+
+```{r}
+oto_practice <- read_excel("../../raw_data/practice_data/sterling_oto_data.xlsx")
+
+ggplot(oto_practice, aes(x = Otolith_age, y = Length_mm)) +
+  geom_point()
+```
+

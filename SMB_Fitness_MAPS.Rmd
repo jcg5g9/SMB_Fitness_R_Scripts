@@ -5,6 +5,8 @@ date: "9/11/2019"
 output: html_document
 ---
 
+# SMB Fitness Map Building
+
 ## Libraries needed for analysis
 ```{r setup, echo = FALSE, include = FALSE}
 library(riverdist)
