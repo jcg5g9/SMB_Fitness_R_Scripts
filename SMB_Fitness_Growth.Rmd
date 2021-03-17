@@ -20,8 +20,19 @@ smbfit_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working
 smbfit_data <- smbfit_data %>%
   mutate(tl_alive = as.numeric(tl_alive))
 
+smbfit_data[sapply(smbfit_data, is.character)] <- lapply(smbfit_data[sapply(smbfit_data, is.character)], 
+                                       as.factor)
+
+smbfit_counts <- smbfit_data %>%
+  group_by(hyb_status, sex) %>%
+  count()
+
+smbfit_m_f_averages <- smbfit_data %>%
+  group_by(hyb_status, sex) %>%
+  summarize(mean_nor_prop = mean(prop_nor))
+
 ggplot(smbfit_data, aes(x = consensus_age, y = tl_alive, color = hyb_status)) +
-  geom_point()
+  geom_point(position = position_jitter(width = 0.3))
 
 ```
 
