@@ -1,0 +1,32 @@
+---
+title: "SMB_Fitness_Growth"
+author: "Joe Gunn"
+date: "3/17/2021"
+output: html_document
+---
+
+## Libraries needed for analysis
+```{r setup, include=FALSE, include=FALSE}
+library(readxl)
+library(tidyverse)
+library(cowplot)
+
+```
+
+## Read in data
+```{r}
+smbfit_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
+
+smbfit_data <- smbfit_data %>%
+  mutate(tl_alive = as.numeric(tl_alive))
+
+ggplot(smbfit_data, aes(x = consensus_age, y = tl_alive, color = hyb_status)) +
+  geom_point()
+
+```
+
+## Run some preliminary data
+```{r}
+
+
+```
