@@ -23,6 +23,9 @@ smbfit_data <- smbfit_data %>%
 smbfit_data[sapply(smbfit_data, is.character)] <- lapply(smbfit_data[sapply(smbfit_data, is.character)], 
                                        as.factor)
 
+#Here, I am removing two outlier samples in which the difference between total length alive and total length dead was greater than -10 (which means that the total length dead was greater than the total length alive, which does not go along with the rest of the data. I am assuming these are the result of recorder or measurement error on these two samples)
+
+smbfit_data_diff_outliers_removed <- smbfit_data[-c(64:65),]
 smbfit_counts <- smbfit_data %>%
   group_by(hyb_status, sex) %>%
   count()
@@ -31,9 +34,18 @@ smbfit_m_f_averages <- smbfit_data %>%
   group_by(hyb_status, sex) %>%
   summarize(mean_nor_prop = mean(prop_nor))
 
-ggplot(smbfit_data, aes(x = consensus_age, y = tl_alive, color = hyb_status)) +
-  geom_point(position = position_jitter(width = 0.3))
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/growth_figures/preliminary_growth_curve.pdf", width=6, height=5)
 
+ggplot(smbfit_data_diff_outliers_removed, aes(x = consensus_age, y = tl_alive, color = hyb_status)) +
+  geom_point(size = 3, position = position_jitter(width = 0.3)) +
+  geom_smooth() +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "consensus age (years)", y = "total length alive (mm)") +
+  scale_color_manual(values = c("firebrick3","navyblue")) +
+  theme(axis.title = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 15))
+
+dev.off()
 ```
 
 ## Run some preliminary data
