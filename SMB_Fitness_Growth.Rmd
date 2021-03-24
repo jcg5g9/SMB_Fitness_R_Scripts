@@ -44,9 +44,9 @@ smbfit_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working
 smbfit_data <- smbfit_data %>%
   mutate(tl_alive = as.numeric(tl_alive))
 
+#Change all character variables to factors
 smbfit_data[sapply(smbfit_data, is.character)] <- lapply(smbfit_data[sapply(smbfit_data, is.character)], 
                                        as.factor)
-
 ```
 
 ## Read in genepop data
@@ -54,13 +54,17 @@ smbfit_data[sapply(smbfit_data, is.character)] <- lapply(smbfit_data[sapply(smbf
 smbfit_msat_data <- read_population("../../raw_data/genotype_data/smbfit_msat_genotypes.csv", type = "column", locus.columns = 2:29)
 
 #Data Cleaning:
+
 #Change categorical variables to factors
 smbfit_msat_data$sample_id <- as.factor(smbfit_msat_data$sample_id)
-
 ```
 
+
 ```{r}
-Ho_per_loc <- genetic_diversity(smbfit_msat_data, stratum = "sample_id", mode = c("Ho")) # calculate observed heterozygosity 
+Ho_per_loc <- genetic_diversity(smbfit_msat_data, #calculate observed heterozygosity 
+                                stratum = "sample_id", 
+                                mode = c("Ho")) 
+
 
 Ho_count_NA <- Ho_per_loc %>%
   mutate(Stratum = factor(Stratum)) %>%
@@ -68,7 +72,6 @@ Ho_count_NA <- Ho_per_loc %>%
   summarize(sum_na = sum(is.na(Ho)))
 
 Ho_count_NA$sum_loc <- with(Ho_count_NA, 14 - sum_na)
-
 
 Ho_per_loc_noNA <- Ho_per_loc %>%
   as.data.frame() %>%
@@ -82,8 +85,8 @@ Ho_per_ind <- Ho_per_loc_noNA %>%
 Ho_per_ind <- Ho_per_ind %>%
   left_join(Ho_count_NA, by = "Stratum")
 
-#Calculate per-individual Heterozygosity
 
+#Calculate per-individual Heterozygosity
 Ho_per_ind$Ho <- with(Ho_per_ind, tot_ho/sum_loc)
 
 colnames(Ho_per_ind)[1] <- "sample_id"
@@ -93,13 +96,22 @@ colnames(Ho_per_ind)[1] <- "sample_id"
 smbfit_data_het <- smbfit_data %>%
   left_join(Ho_per_ind, by = "sample_id")
 
+smbfit_data_het$log10_wt <- with(smbfit_data_het, 3.2*log10(tl_alive) - 5.329)
+smbfit_data_het$stand_wt <- with(smbfit_data_het, 10^log10_wt)
+smbfit_data_het$tl_by_sl <- with(smbfit_data_het, tl_alive/sl)
+smbfit_data_het$condition <- with(smbfit_data_het, mass_g/stand_wt)
+
 smbfit_data_het_age2 <- smbfit_data_het %>%
   filter(consensus_age == "2")
 
-ggplot(smbfit_data_het_age2, aes(x = Ho, y = tl_alive)) + 
+ggplot(smbfit_data_het, aes(x = prop_nor, y = condition)) + 
   geom_point() +
-  geom_smooth(method = 'lm')
+  geom_smooth(method = "lm")
 
+ggplot(smbfit_data_het, aes(x = hyb_status, y = )) + 
+  geom_boxplot()
+
+summary(lm(condition ~ Ho, smbfit_data_het))
 ```
 
 ```{r}
