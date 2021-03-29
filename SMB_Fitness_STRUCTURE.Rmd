@@ -12,6 +12,7 @@ library(tidyverse)
 library(cowplot)
 library(devtools)
 library(pophelper)
+library(genepopedit)
 ```
 
 ## Metadata
@@ -82,5 +83,11 @@ plotQ(smbfit_K2,
       imgtype = "pdf",
       imgoutput = "sep",
       height = 10, width = 100)
+
+```
+
+## NewHybrids
+```{r}
+genepop_newhybrids("../../raw_data/genotype_data/genepop_files/smbfit_genepop.txt", path = "../../raw_data/newhybrids_data/smbfit_nh")
 
 ```
