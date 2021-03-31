@@ -31,6 +31,7 @@ smbfit_genetics_metadata <- column_to_rownames(smbfit_genetics_metadata, "NA")
 
 ```
 
+
 ```{r}
 #Gather data
 smbfit_sfiles <- list.files(path = "/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/raw_data/structure_data", full.names=T)
@@ -50,12 +51,12 @@ smbfit_evanno_plot <- ggplot(smbfit_evanno_info, aes(x = k, y = deltaK)) +
 
 ```
 
-
 #Run clumpp
 ```{r}
 clumppExport(smbfit_slist, parammode = 3, paramrep = 10000, useexe=T)
 
 ```
+
 
 ```{r}
 smbfit_K2 <- readQ("../structure_analysis/smbfit_K2.txt")
