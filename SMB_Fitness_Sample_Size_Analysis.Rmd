@@ -4,14 +4,14 @@ author: "Joe Gunn"
 date: "12/15/2020"
 output: html_document
 ---
-
+# Libraries needed for analysis
 ```{r setup, include=FALSE}
 library(readxl)
 library(tidyverse)
 library(cowplot)
-
 ```
 
+# Read in raw working data
 ```{r}
 smb_fit_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
 

@@ -4,59 +4,27 @@ author: "Joe Gunn"
 date: "12/17/2020"
 output: html_document
 ---
-
+# Libraries needed for analysis
 ```{r setup, include=FALSE}
 library(readxl)
 library(tidyverse)
 library(cowplot)
-
 ```
 
+# Read in raw master data
 ```{r}
 smb_fit_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
 
-smb_fit_data_size_dist <- smb_fit_data[,c(1:22)]
+smb_fit_data_clean <- smb_fit_data[, -c(2:4,11,15:17,25:31)]
 
-smb_fit_data_size_dist <- smb_fit_data_size_dist %>%
-  mutate(sample_id = factor(sample_id), river_code = factor(river_code),
-         sample_number = as.numeric(sample_number), date_collected = factor(date_collected),
-         range_id = factor(range_id), river = factor(river), sex = factor(sex),
-         meas_ints = factor(meas_ints), tl_alive = as.numeric(tl_alive), 
-         size_category = factor(size_category))
-
-ggplot(smb_fit_data_size_dist, aes(x = tl_dead, y = sl, color = sex, shape = river)) +
-  geom_point()
-
-ggplot(smb_fit_data_size_dist, aes(x = tl_dead, y = hl, color = meas_ints)) +
-  geom_point()
-
-ggplot(smb_fit_data_size_dist, aes(x = tl_dead, y = bd, color = meas_ints)) +
-  geom_point()
-
-ggplot(smb_fit_data_size_dist, aes(x = tl_dead, y = mass_g, color = sex, shape = river)) +
-  geom_point()
-
-ggplot(smb_fit_data_size_dist, aes(x = hl, y = bd, color = sex)) +
-  geom_point()
-
-
-smb_fit_elk <- smb_fit_data_size_dist %>%
-  filter(river == "ELK")
-
-smb_fit_bsug <- smb_fit_data_size_dist %>%
-  filter(river == "BSUG")
-
-ggplot(smb_fit_bsug, aes(x = tl_dead, y = mass_g, color = sex)) +
-  geom_point()
-
-
-ggplot(smb_fit_data_size_dist, aes(x = tl_dead, y = ol, fill = meas_ints)) +
-  geom_point(aes(fill = meas_ints), size = 3, color = "black", pch = 21) +
-  theme_set(theme_cowplot(12)) +
-  scale_fill_manual(values = c("lightyellow", "mediumpurple","forestgreen","deeppink2")) +
-  theme(axis.title = element_text(size = 20)) +
-  theme(axis.text = element_text(size = 15))
-  
+smb_fit_data_clean <- smb_fit_data_clean %>%
+  mutate(sample_id = factor(sample_id),
+         date_collected = factor(date_collected),
+         river = factor(river), 
+         sex = factor(sex),
+         meas_ints = factor(meas_ints), 
+         tl_alive = as.numeric(tl_alive), 
+         tl_dead = as.numeric(tl_dead))
 
 
 ```
