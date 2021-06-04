@@ -1,0 +1,75 @@
+---
+title: "SMB_Fitness_Geo_Admix"
+author: "Joe Gunn"
+date: "6/4/2021"
+output: html_document
+---
+
+## Libraries needed for analysis
+```{r setup, include=FALSE}
+library(readxl)
+library(tidyverse)
+library(cowplot)
+```
+
+# Read in raw working data
+```{r}
+smbfit_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
+
+smbfit_data <- smbfit_data %>%
+  mutate(tl_alive = as.numeric(tl_alive)) %>%
+  mutate(prop_nor = as.numeric(prop_nor)) %>%
+  mutate(prop_neo = as.numeric(prop_neo)) %>%
+  mutate(dist_from_df = as.numeric(dist_from_df)) %>%
+  mutate(log_dist_from_df = log10(dist_from_df))
+
+#Change all character variables to factors
+smbfit_data[sapply(smbfit_data, is.character)] <- lapply(smbfit_data[sapply(smbfit_data, is.character)], 
+                                       as.factor)
+options(scipen = 999)
+
+smbfit_data_noNA <- smbfit_data %>%
+  drop_na(dist_from_df)
+
+
+ggplot(smbfit_data_noNA, aes(x = river, y = prop_nor, fill = river)) + 
+  geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.6) +
+  geom_point(position = position_jitter(width = 0.2), alpha = 0.6, color = "black", pch = 21, show.legend = F) +
+  theme_set(theme_cowplot(12)) + 
+  scale_fill_manual(values = c("grey","grey"))
+
+
+
+#Big Sugar Admixed Samples
+smbfit_data_admixed <- smbfit_data %>%
+  filter(hyb_status == "admixed") 
+
+smbfit_data_bsug <- smbfit_data_admixed %>%
+  filter(river == "BSUG")
+
+bsug_nooutlier <- smbfit_data_bsug[-c(6),]
+
+
+ggplot(bsug_nooutlier, aes(x = dist_from_df, y = prop_nor)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+
+
+
+#Elk River Admixed Samples
+smbfit_data_elk <- smbfit_data_admixed %>%
+  filter(river == "ELK")
+
+ggplot(smbfit_data_elk, aes(x = dist_from_df, y = prop_nor)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+
+
+
+
+
+summary(lm(prop_nor ~ dist_from_df, data = bsug_nooutlier))
+
+ggplot(bsug_nooutlier, aes(x = log_dist_from_df, y = prop_nor)) + 
+  geom_point()
+```

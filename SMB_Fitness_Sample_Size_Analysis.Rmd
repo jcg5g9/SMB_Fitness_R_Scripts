@@ -13,43 +13,102 @@ library(cowplot)
 
 # Read in raw working data
 ```{r}
-smb_fit_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
+smbfit_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
 
-smb_fit_data_size_dist <- smb_fit_data[,c(1:22)]
+#Clean up and prepare dataset for plotting size distributions
+smbfit_data_size_dist <- smbfit_data[,c(1,5,11,12,24)]
 
-smb_fit_data_size_dist <- smb_fit_data_size_dist %>%
-  mutate(sample_id = factor(sample_id), river_code = factor(river_code),
-         sample_number = as.numeric(sample_number), date_collected = factor(date_collected),
-         range_id = factor(range_id), river = factor(river), sex = factor(sex),
-         meas_ints = factor(meas_ints), tl_alive = as.numeric(tl_alive), 
+smbfit_data_size_dist <- smbfit_data_size_dist %>%
+  mutate(sample_id = factor(sample_id),
+         river = factor(river),
+         sex = factor(sex),
+         tl_alive = as.numeric(tl_alive), 
          size_category = factor(size_category))
 
-smb_fit_num_per_size_total <- smb_fit_data_size_dist %>%
+#Drop the one NA in the dataset where I don't have total length for the fish
+smbfit_data_size_dist <- smbfit_data_size_dist %>%
+  drop_na()
+```
+
+
+```{r}
+
+#Get total number of samples per size category
+smbfit_num_per_size_total <- smbfit_data_size_dist %>%
   group_by(size_category) %>%
   count() %>%
   as.data.frame()
 
-smb_fit_num_per_size_by_river <- smb_fit_data_size_dist %>%
+#Get total number of samples per size category, per river
+smbfit_num_per_size_by_river <- smbfit_data_size_dist %>%
   group_by(size_category, river) %>%
   count() %>%
   as.data.frame()
 
+#Get total number of samples per size category, per sex
+smbfit_num_per_size_by_sex <- smbfit_data_size_dist %>%
+  group_by(size_category, sex) %>%
+  count() %>%
+  as.data.frame()
 
-smb_fit_size_dist_total <- ggplot(smb_fit_num_per_size_total, aes(x = size_category, y = n)) + 
+
+#Prepare datasets by creating columns with readable names
+smbfit_num_per_size_by_river$river_name <- c("Big Sugar Creek", "Elk River","Big Sugar Creek", "Elk River","Big Sugar Creek", "Elk River","Big Sugar Creek", "Elk River","Big Sugar Creek", "Elk River","Big Sugar Creek", "Elk River","Big Sugar Creek", "Elk River","Big Sugar Creek", "Elk River")
+
+smbfit_num_per_size_by_sex$sex_name <- c("Female", "Male","Female", "Male","Female", "Male","Female", "Male","Female", "Male","Female", "Male","Female", "Male","Female", "Male")
+
+smbfit_num_per_size_by_sex$size_bins <- c("200-225","200-225","225-250","225-250","250-275","250-275","275-300","275-300","300-325","300-325","325-350","325-350","350-375","350-375","375-400+","375-400+")
+
+smbfit_num_per_size_by_river_by_sex$river_sex_names <- c(rep(c("Big Sugar Creek Female","Big Sugar Creek Male", "Elk River Female","Elk River Male"), times = 8))
+                                                             
+                                                             
+                                                    
+
+
+#Plot total number of samples per size category
+smb_fit_size_dist_total <- ggplot(smbfit_num_per_size_total, aes(x = size_category, y = n)) + 
   geom_bar(stat = "identity", color = "black", fill = "grey") + 
   theme_set(theme_cowplot(12)) +
-  labs(x = "Size Category", y = "Number of Individuals")
+  labs(x = "Size Category", y = "Number of Individuals") + 
+  theme(axis.text.y = element_text(size = 15)) +
+  theme(axis.title.y = element_text(size = 15)) +
+  theme(axis.text.x = element_blank()) +
+  theme(axis.title.x = element_blank())
 
-smb_fit_size_dist_river <- ggplot(smb_fit_num_per_size_by_river, aes(x = size_category, y = n, fill = river)) + 
+#Plot total number of samples per size category, per river
+smb_fit_size_dist_river <- ggplot(smbfit_num_per_size_by_river, aes(x = size_bins, y = n, fill = river_name)) + 
   geom_bar(stat = "identity", position = position_dodge(), color = "black") + 
   theme_set(theme_cowplot(12)) +
-  labs(x = "Size Category", y = "Number of Individuals") + 
+  labs(x = "Size Bins (mm)", y = "Number of Individuals", fill = "River") + 
   scale_fill_manual(values = c("orchid1","sienna4")) +
-  theme(legend.position = c(0.8,0.8))
+  theme(legend.title = element_text(size = 15, face = "bold")) +
+  theme(legend.position = c(0.7,0.8)) +
+  theme(axis.text.y = element_text(size = 15)) +
+  theme(axis.title.y = element_text(size = 15)) +
+  theme(axis.text.x = element_blank()) +
+  theme(axis.title.x = element_blank())
 
-pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/sample_visualization/total_sample_distribution.pdf", width = 12, height = 4)
+#Plot total number of samples per size category, per sex
+smb_fit_size_dist_sex <- ggplot(smbfit_num_per_size_by_sex, aes(x = size_bins, y = n, fill = sex_name)) + 
+  geom_bar(stat = "identity", position = position_dodge(), color = "black") + 
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Size Bins (mm)", y = "Number of Individuals", fill = "Sex") + 
+  scale_fill_manual(values = c("firebrick3","deepskyblue")) +
+  theme(legend.title = element_text(size = 15, face = "bold")) +
+  theme(legend.position = c(0.7,0.8)) +
+  theme(axis.text = element_text(size = 15)) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 0.9)) +
+  theme(axis.title = element_text(size = 15))
 
-plot_grid(smb_fit_size_dist_total, smb_fit_size_dist_river, nrow = 1, labels = c("A","B"), label_size = 25)
+#Plot all size distributions (total, by river, and by sex)
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/sample_visualization/total_sample_distribution.pdf", width = 6, height = 12)
+
+plot_grid(smb_fit_size_dist_total, 
+          smb_fit_size_dist_river, 
+          smb_fit_size_dist_sex,
+          ncol = 1, 
+          labels = c("a","b","c"), 
+          label_size = 20)
 
 dev.off()
 ```
