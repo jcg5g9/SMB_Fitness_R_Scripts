@@ -58,9 +58,7 @@ smbfit_num_per_size_by_river$river_name <- c("Big Sugar Creek", "Elk River","Big
 smbfit_num_per_size_by_sex$sex_name <- c("Female", "Male","Female", "Male","Female", "Male","Female", "Male","Female", "Male","Female", "Male","Female", "Male","Female", "Male")
 
 smbfit_num_per_size_by_sex$size_bins <- c("200-225","200-225","225-250","225-250","250-275","250-275","275-300","275-300","300-325","300-325","325-350","325-350","350-375","350-375","375-400+","375-400+")
-
-smbfit_num_per_size_by_river_by_sex$river_sex_names <- c(rep(c("Big Sugar Creek Female","Big Sugar Creek Male", "Elk River Female","Elk River Male"), times = 8))
-                                                             
+                               
                                                              
                                                     
 
@@ -76,13 +74,14 @@ smb_fit_size_dist_total <- ggplot(smbfit_num_per_size_total, aes(x = size_catego
   theme(axis.title.x = element_blank())
 
 #Plot total number of samples per size category, per river
-smb_fit_size_dist_river <- ggplot(smbfit_num_per_size_by_river, aes(x = size_bins, y = n, fill = river_name)) + 
+smb_fit_size_dist_river <- ggplot(smbfit_num_per_size_by_river, aes(x = size_category, y = n, fill = river_name)) + 
   geom_bar(stat = "identity", position = position_dodge(), color = "black") + 
   theme_set(theme_cowplot(12)) +
   labs(x = "Size Bins (mm)", y = "Number of Individuals", fill = "River") + 
-  scale_fill_manual(values = c("orchid1","sienna4")) +
+  scale_fill_manual(values = c("grey","black")) +
   theme(legend.title = element_text(size = 15, face = "bold")) +
-  theme(legend.position = c(0.7,0.8)) +
+  theme(legend.position = c(0.65,0.8)) +
+  theme(legend.text = element_text(size = 15)) +
   theme(axis.text.y = element_text(size = 15)) +
   theme(axis.title.y = element_text(size = 15)) +
   theme(axis.text.x = element_blank()) +
@@ -93,9 +92,10 @@ smb_fit_size_dist_sex <- ggplot(smbfit_num_per_size_by_sex, aes(x = size_bins, y
   geom_bar(stat = "identity", position = position_dodge(), color = "black") + 
   theme_set(theme_cowplot(12)) +
   labs(x = "Size Bins (mm)", y = "Number of Individuals", fill = "Sex") + 
-  scale_fill_manual(values = c("firebrick3","deepskyblue")) +
+  scale_fill_manual(values = c("grey","black")) +
   theme(legend.title = element_text(size = 15, face = "bold")) +
-  theme(legend.position = c(0.7,0.8)) +
+  theme(legend.position = c(0.65,0.8)) +
+  theme(legend.text = element_text(size = 15)) +
   theme(axis.text = element_text(size = 15)) +
   theme(axis.text.x = element_text(angle = 30, hjust = 0.9)) +
   theme(axis.title = element_text(size = 15))

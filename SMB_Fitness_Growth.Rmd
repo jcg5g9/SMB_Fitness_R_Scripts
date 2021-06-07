@@ -6,18 +6,14 @@ output: html_document
 ---
 
 ## Libraries needed for analysis
-```{r setup, include=FALSE, include=FALSE}
+```{r, include=FALSE}
 library(readxl)
 library(tidyverse)
 library(cowplot)
 library(sp)
 library(popgraph)
-library(ade4)
 library(cowplot)
 library(nlme)
-library(maps)
-library(mapdata)
-library(stringr)
 library(lme4)
 library(factoextra)
 library(MASS)
@@ -25,8 +21,338 @@ library(logihist)
 library(pophelper)
 library(ggpubr)
 library(DescTools)
-library(vegan)
 library(gstudio)
+library(FSAdata)
+library(FSA) #v.0.8.32
+library(boot)
+library(car)
+```
+
+## Read in and clean  data for analysis
+```{r}
+smbfit_raw_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
+smbfit_bc_raw_data <- read_excel("../../raw_data/backcalc_data/smbfit_bc_noHSYC.xlsx")
+
+smbfit_age_data <- smbfit_raw_data[,-c(1:4,6:11,13:17,19:23,25:31:33,35:39)]
+smbfit_age_data$estimate <- factor(c(rep("actual",times=119)))
+
+smbfit_bc_data <- smbfit_bc_raw_data[-c(150:265),-c(1)]
+
+smbfit_age_data_clean <- rbind(smbfit_age_data,smbfit_bc_data)
+
+smbfit_age_data_clean <- smbfit_age_data_clean %>%
+  mutate(river = factor(river),
+         tl_alive = as.numeric(tl_alive),
+         sex = factor(sex),
+         hyb_status = factor(hyb_status))
+
+smbfit_age_data_clean_noNA <- smbfit_age_data_clean[-c(47:49,119),]
+
+smbfit_age_data_clean_actual <- smbfit_age_data_clean_noNA %>%
+  filter(estimate=="actual")
+
+```
+
+## Prepare to fit von Bertalanffy growth models to genetic groups (Pure Neosho, Pure Northern, Admixed) based on results from Structure for K=2, without the Honey Creek and Sycamore Creek reference population.
+```{r}
+
+##Split the dataset into three usable datasets for admixed individuals, pure neosho, and pure northern
+smbfit_age_admixed <- smbfit_age_data_clean_noNA %>%
+  filter(hyb_status =="Admixed")
+
+smbfit_age_admixed <- smbfit_age_admixed[-50,]
+
+smbfit_age_neosho <- smbfit_age_data_clean_noNA %>%
+  filter(hyb_status =="Neosho")
+
+smbfit_age_northern <- smbfit_age_data_clean_noNA %>%
+  filter(hyb_status =="Northern")
+
+```
+
+## Fit models to genetic groups
+```{r}
+#Write a funciton for optimizing the von Bert model (this is used below)
+vb_function <- vbFuns(param = "Typical")
+
+#Get starting values for von Bert optimization
+f_starts_admixed <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_admixed)
+f_starts_neosho <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_neosho)
+f_starts_northern <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_northern)
+
+#Fit von Bert function
+fit_admixed <- nlme(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_admixed, start = f_starts_admixed)
+fit_neosho <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_neosho, start = f_starts_neosho)
+fit_northern <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_northern, start = f_starts_northern)
+
+#Get coefficients from the model fit
+admix_coefficients <- coef(fit_admixed)
+    #Linf = 395.08
+    #K = 0.41
+    #t0 = -0.05
+
+neosho_coefficients <- coef(fit_neosho)
+    #Linf = 431.07
+    #K = 0.33
+    #t0 = -0.27
+
+northern_coefficients <- coef(fit_northern)
+    #Linf = 446.26
+    #K = 0.29
+    #t0 = -0.26
+
+admix_bootstrap <- Boot(fit_admixed) #996 out of 999 attempted
+neosho_bootstrap <- Boot(fit_neosho) #998 out of 999 attempted
+northern_bootstrap <- Boot(fit_northern) #998 out of 999 attempted
+
+admix_confint <- confint(admix_bootstrap)
+neosho_confint <- confint(neosho_bootstrap)
+northern_confint <- confint(northern_bootstrap)
+
+admix_pred <- predict(fit_admixed,data.frame(consensus_age=2:8))
+neosho_pred <- predict(fit_neosho,data.frame(consensus_age=2:7))
+northern_pred <- predict(fit_northern,data.frame(consensus_age=2:7)) 
+
+#write functions to bootstrap over individual ages
+pred_2_function_admix <- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:8
+pred_2_function_admix(fit_admixed)
+
+pred_2_function_neosho <- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:7
+pred_2_function_neosho(fit_neosho)
+
+pred_2_function_northern<- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:7
+pred_2_function_admix(fit_northern)
+
+
+ages <- seq(-1,15,by=0.2)
+admix_indiv_boot <- Boot(fit_admixed, f = pred_2_function_admix) #998 out of 999
+
+ages <- seq(-1,15,by=0.2)
+neosho_indiv_boot <- Boot(fit_neosho, f = pred_2_function_neosho) #997 out of 999
+
+ages <- seq(-1,15,by=0.2)
+northern_indiv_boot <- Boot(fit_northern, f = pred_2_function_northern) #998 out of 999
+
+preds1_admix <- data.frame(ages,
+                     predict(fit_admixed,data.frame(consensus_age=ages)),
+                     confint(admix_indiv_boot))
+names(preds1_admix) <- c("age","fit","LCI","UCI")
+preds1_admix$hyb_status <- c(rep("Admixed",times=81))
+
+
+preds1_neosho <- data.frame(ages,
+                     predict(fit_neosho,data.frame(consensus_age=ages)),
+                     confint(neosho_indiv_boot))
+names(preds1_neosho) <- c("age","fit","LCI","UCI")
+preds1_neosho$hyb_status <- c(rep("Neosho",times=81))
+
+preds1_northern <- data.frame(ages,
+                     predict(fit_northern,data.frame(consensus_age=ages)),
+                     confint(northern_indiv_boot))
+names(preds1_northern) <- c("age","fit","LCI","UCI")
+preds1_northern$hyb_status <- c(rep("Northern",times=81))
+
+preds1_all_smb <- rbind(preds1_admix,
+                        preds1_neosho,
+                        preds1_northern)
+
+
+preds1_obs_admix <- filter(preds1_admix,age>=2,age<=8)
+preds1_obs_admix$hyb_status <- c(rep("Admixed",times=31))
+
+preds1_obs_neosho <- filter(preds1_neosho,age>=2,age<=7)
+preds1_obs_neosho$hyb_status <- c(rep("Neosho",times=26))
+
+preds1_obs_northern <- filter(preds1_northern,age>=2,age<=7)
+preds1_obs_northern$hyb_status <- c(rep("Northern",times=26))
+
+preds1_obs_all_smb <- rbind(preds1_obs_admix,
+                        preds1_obs_neosho,
+                        preds1_obs_northern)
+
+preds1_all_smb_positive <- preds1_all_smb[-c(1:10),]
+```
+
+## Prepare to fit Von Bertalanffy growth models to sexes
+```{r}
+##Split the dataset into three usable datasets for admixed individuals, pure neosho, and pure northern
+smbfit_age_male <- smbfit_age_data_clean_noNA %>%
+  filter(sex =="Male")
+
+smbfit_age_male <- smbfit_age_admixed[-50,]
+
+smbfit_age_female <- smbfit_age_data_clean_noNA %>%
+  filter(sex =="Female")
+
+```
+
+## Fit models to sexes
+```{r}
+
+
+#Write a funciton for optimizing the von Bert model (this is used below)
+vb_function <- vbFuns(param = "Typical")
+
+#Get starting values for von Bert optimization
+f_starts_male <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_male)
+f_starts_female <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_female)
+
+#Fit von Bert function
+fit_male <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_male, start = f_starts_male)
+fit_female <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_female, start = f_starts_female)
+
+
+#Get coefficients from the model fit
+male_coefficients <- coef(fit_male)
+    #Linf = 417.86
+    #K = 0.38
+    #t0 = -0.06
+
+female_coefficients <- coef(fit_female)
+    #Linf = 418.71
+    #K = 0.33
+    #t0 = -0.22
+
+male_bootstrap <- Boot(fit_male) #997 out of 999 attempted
+female_bootstrap <- Boot(fit_female) #998 out of 999 attempted
+
+male_confint <- confint(male_bootstrap)
+female_confint <- confint(female_bootstrap)
+
+male_pred <- predict(fit_male,data.frame(consensus_age=2:7))
+female_pred <- predict(fit_female,data.frame(consensus_age=2:8))
+
+
+#write functions to bootstrap over individual ages
+pred_2_function_male <- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:7
+pred_2_function_male(fit_male)
+
+pred_2_function_female <- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:8
+pred_2_function_female(fit_female)
+
+
+ages <- seq(-1,15,by=0.2)
+male_indiv_boot <- Boot(fit_male, f = pred_2_function_male) #996 out of 999
+
+ages <- seq(-1,15,by=0.2)
+female_indiv_boot <- Boot(fit_female, f = pred_2_function_female) #996 out of 999
+
+
+preds1_male <- data.frame(ages,
+                     predict(fit_male,data.frame(consensus_age=ages)),
+                     confint(male_indiv_boot))
+names(preds1_male) <- c("age","fit","LCI","UCI")
+preds1_male$sex <- c(rep("Male",times=81))
+
+
+preds1_female <- data.frame(ages,
+                     predict(fit_female,data.frame(consensus_age=ages)),
+                     confint(female_indiv_boot))
+names(preds1_female) <- c("age","fit","LCI","UCI")
+preds1_female$sex <- c(rep("Female",times=81))
+
+
+preds1_all_sexes <- rbind(preds1_male,
+                        preds1_female)
+
+
+preds1_obs_male <- filter(preds1_male,age>=2,age<=7)
+preds1_obs_male$sex <- c(rep("Male",times=26))
+
+preds1_obs_female <- filter(preds1_female,age>=2,age<=8)
+preds1_obs_female$sex <- c(rep("Female",times=31))
+
+preds1_obs_all_sexes <- rbind(preds1_obs_male,
+                        preds1_obs_female)
+
+```
+
+## Plotting
+```{r}
+#Plot von Bert growth for all admixture status groups (Pure Neosho, Pure Northern, and Admixed)
+vonbert_admix_status <- ggplot() + 
+  geom_ribbon(data=preds1_all_smb, aes(x = age, ymin = LCI, ymax = UCI,fill = hyb_status, alpha=0.01,), show.legend = F) +
+  geom_point(data=smbfit_age_data_clean_actual,aes(x = consensus_age,y = tl_alive, fill = hyb_status), show.legend = T, size=2, pch=21, position = position_jitter(width = 0.2)) + 
+  geom_line(data=preds1_all_smb, aes(x=age, y=fit, linetype = hyb_status)) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values=c("mediumpurple","deepskyblue","deeppink2")) +
+  scale_y_continuous(name="Total Length (mm)",limits=c(0,500),expand=c(0,0)) +
+  scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
+  labs(fill = "Admixture Status", linetype = "Admixture Status") +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(legend.position = c(0.7,0.4)) +
+  theme(legend.title = element_text(face="bold",size = 15)) +
+  theme(legend.text = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 12)) +
+  scale_alpha(guide = 'none')
+
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/growth_figures/von_bert_admixture_groups.pdf", width = 7, height = 5)
+
+ggplot() + 
+  geom_ribbon(data=preds1_all_smb, aes(x = age, ymin = LCI, ymax = UCI,fill = hyb_status, alpha=0.01,), show.legend = F) +
+  geom_point(data=smbfit_age_data_clean_actual,aes(x = consensus_age,y = tl_alive, fill = hyb_status), show.legend = T, size=2, pch=21, position = position_jitter(width = 0.2)) + 
+  geom_line(data=preds1_all_smb, aes(x=age, y=fit, linetype = hyb_status)) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values=c("mediumpurple","deepskyblue","deeppink2")) +
+  scale_y_continuous(name="Total Length (mm)",limits=c(0,500),expand=c(0,0)) +
+  scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
+  labs(fill = "Admixture Status", linetype = "Admixture Status") +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(legend.position = c(0.7,0.4)) +
+  theme(legend.title = element_text(face="bold",size = 15)) +
+  theme(legend.text = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 12)) +
+  scale_alpha(guide = 'none')
+
+dev.off()
+
+#Plot von Bert growth for all admixture status groups (Pure Neosho, Pure Northern, and Admixed)
+vonbert_sex <- ggplot() + 
+  geom_ribbon(data=preds1_all_sexes, aes(x = age, ymin = LCI, ymax = UCI,fill = sex, alpha=0.01,), show.legend = F) +
+  geom_point(data=smbfit_age_data_clean_actual,aes(x = consensus_age,y = tl_alive, fill = sex), show.legend = T, size=2, pch=21, position = position_jitter(width = 0.2)) + 
+  geom_line(data=preds1_all_sexes, aes(x=age, y=fit, linetype = sex)) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values=c("grey","black")) +
+  scale_y_continuous(name="Total Length (mm)",limits=c(0,500),expand=c(0,0)) +
+  scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
+  labs(fill = "Sex", linetype = "Sex") +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(legend.position = c(0.7,0.4)) +
+  theme(legend.title = element_text(face="bold",size = 15)) +
+  theme(legend.text = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 12)) +
+  scale_alpha(guide = 'none')
+
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/growth_figures/von_bert_sexes.pdf", width = 7, height = 5)
+
+ggplot() + 
+  geom_ribbon(data=preds1_all_sexes, aes(x = age, ymin = LCI, ymax = UCI,fill = sex, alpha=0.01,), show.legend = F) +
+  geom_point(data=smbfit_age_data_clean_actual,aes(x = consensus_age,y = tl_alive, fill = sex), show.legend = T, size=2, pch=21, position = position_jitter(width = 0.2)) + 
+  geom_line(data=preds1_all_sexes, aes(x=age, y=fit, linetype = sex)) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values=c("grey","black")) +
+  scale_y_continuous(name="Total Length (mm)",limits=c(0,500),expand=c(0,0)) +
+  scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
+  labs(fill = "Sex", linetype = "Sex") +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(legend.position = c(0.7,0.4)) +
+  theme(legend.title = element_text(face="bold",size = 15)) +
+  theme(legend.text = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 12)) +
+  scale_alpha(guide = 'none')
+
+dev.off()
+```
+
+
+
+
+
 ```
 
 ## Read in all non-genetic data (including morphometrics, sex, otolith consensus age, etc.)
@@ -162,7 +488,7 @@ ggplot(smbfit_data_diff_outliers_removed, aes(x = consensus_age, y = tl_alive, c
 dev.off()
 ```
 
-## Run some preliminary data
+## Growth
 ```{r}
 
 
