@@ -32,3 +32,8 @@ Purpose: Here I am plotting results from the program STRUCTURE, which assesses g
 
 ### Data use:
 #### Genotype data for 117 individuals over 14 microsatellite loci
+
+# Aim 5 - Admixture Analysis on a geographic gradient
+## File: SMB_Fitness_Geo_Admix.Rmd
+
+Purpose: Here I am determining whether there are relationships between the proportion of Northern (invasive) ancestry in samples as they go further down river (starting from the put out point at Deep Ford Access (DFA)). I specifically want to test whether the proportion of Northern SMB ancestry increases with increasing distance from DFA, and I split these analyses up by river (I analyze big sugar and elk river separately). I look at 1) the proportion of Northern ancestry per individual moving downstream, and the proportion of individuals of a given hybrid status at the group level.
