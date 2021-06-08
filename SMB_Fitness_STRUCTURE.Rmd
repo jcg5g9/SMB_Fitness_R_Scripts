@@ -17,7 +17,7 @@ library(genepopedit)
 
 ## Metadata
 ```{r}
-smbfit_genetics_metadata <- read_excel("../../metadata/smbfit_genetics_metadata.xlsx")
+smbfit_genetics_metadata <- read_excel("../../metadata/smbfit_genetics_metadata_no_hsyc.xlsx")
 
 smbfit_genetics_metadata <- smbfit_genetics_metadata %>%
   mutate(sample_id = factor(sample_id),
@@ -34,7 +34,7 @@ smbfit_genetics_metadata <- column_to_rownames(smbfit_genetics_metadata, "NA")
 
 ```{r}
 #Gather data
-smbfit_sfiles <- list.files(path = "/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/raw_data/structure_data", full.names=T)
+smbfit_sfiles <- list.files(path = "/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/raw_data/structure_data/no_hsyc_500K_1M", full.names=T)
 
 #Collate data for summary analysis
 smbfit_slist <- readQ(smbfit_sfiles)
@@ -43,11 +43,22 @@ smbfit_summary <- summariseQ(smbfit_tab)
 
 #Plot summary data
 options(scipen = 999)
-smbfit_evanno_info <- evannoMethodStructure(smbfit_summary, returnplot = F)
-smbfit_evanno_plot <- ggplot(smbfit_evanno_info, aes(x = k, y = deltaK)) + 
-  geom_point() +
+smbfit_evanno_info <- evannoMethodStructure(smbfit_summary, returnplot = F) 
+
+
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/structure_results/structure_deltak.pdf", width = 6, height = 4)
+
+ggplot(smbfit_evanno_info, aes(x = k, y = deltaK)) + 
+  geom_point(size = 2) +
   geom_path() +
-  theme_set(theme_cowplot(12))
+  theme_set(theme_cowplot(12)) +
+  theme(axis.title = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 13)) +
+  theme(axis.title.x = element_text(face = "italic")) +
+  labs(x = "K", y = "DeltaK") +
+  expand_limits(y = 30)
+
+dev.off()
 
 ```
 
@@ -59,13 +70,13 @@ clumppExport(smbfit_slist, parammode = 3, paramrep = 10000, useexe=T)
 
 
 ```{r}
-smbfit_K2 <- readQ("../structure_analysis/smbfit_K2.txt")
+smbfit_K2 <- readQ("../structure_analysis/smbfit_K2_nohsyc.txt")
 
 #K = 2 Plot
 plotQ(smbfit_K2,
       showindlab = F, 
       ordergrp = F,
-      clustercol = c("deepskyblue","deeppink2"),
+      clustercol = c("deeppink2","deepskyblue"),
       showgrplab = F,
       showlegend = F, 
       showsp = F, 
@@ -84,11 +95,5 @@ plotQ(smbfit_K2,
       imgtype = "pdf",
       imgoutput = "sep",
       height = 10, width = 100)
-
-```
-
-## NewHybrids
-```{r}
-genepop_newhybrids("../../raw_data/genotype_data/genepop_files/smbfit_genepop.txt", path = "../../raw_data/newhybrids_data/smbfit_nh")
 
 ```
