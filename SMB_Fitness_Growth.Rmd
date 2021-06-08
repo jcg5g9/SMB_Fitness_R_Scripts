@@ -53,6 +53,15 @@ smbfit_age_data_clean_actual <- smbfit_age_data_clean_noNA %>%
 
 ```
 
+## Data Summary
+```{r}
+smbfit_summary <- smbfit_age_data_clean_actual %>%
+  group_by(river, hyb_status) %>%
+  count()
+
+
+```
+
 ## Prepare to fit von Bertalanffy growth models to genetic groups (Pure Neosho, Pure Northern, Admixed) based on results from Structure for K=2, without the Honey Creek and Sycamore Creek reference population.
 ```{r}
 
@@ -81,14 +90,14 @@ f_starts_neosho <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_neosho)
 f_starts_northern <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_northern)
 
 #Fit von Bert function
-fit_admixed <- nlme(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_admixed, start = f_starts_admixed)
+fit_admixed <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_admixed, start = f_starts_admixed)
 fit_neosho <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_neosho, start = f_starts_neosho)
 fit_northern <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_northern, start = f_starts_northern)
 
 #Get coefficients from the model fit
 admix_coefficients <- coef(fit_admixed)
-    #Linf = 395.08
-    #K = 0.41
+    #Linf = 393.58
+    #K = 0.42
     #t0 = -0.05
 
 neosho_coefficients <- coef(fit_neosho)
@@ -182,8 +191,6 @@ preds1_all_smb_positive <- preds1_all_smb[-c(1:10),]
 smbfit_age_male <- smbfit_age_data_clean_noNA %>%
   filter(sex =="Male")
 
-smbfit_age_male <- smbfit_age_admixed[-50,]
-
 smbfit_age_female <- smbfit_age_data_clean_noNA %>%
   filter(sex =="Female")
 
@@ -272,6 +279,100 @@ preds1_obs_all_sexes <- rbind(preds1_obs_male,
 
 ```
 
+## Prepare to fit Von Bertalanffy growth models to rivers
+```{r}
+##Split the dataset into three usable datasets for admixed individuals, pure neosho, and pure northern
+smbfit_age_elk <- smbfit_age_data_clean_noNA %>%
+  filter(river =="ELK")
+
+smbfit_age_bsug <- smbfit_age_data_clean_noNA %>%
+  filter(river =="BSUG")
+
+```
+
+## Fit models to sexes
+```{r}
+
+
+#Write a funciton for optimizing the von Bert model (this is used below)
+vb_function <- vbFuns(param = "Typical")
+
+#Get starting values for von Bert optimization
+f_starts_elk <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_elk)
+f_starts_bsug <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_bsug)
+
+#Fit von Bert function
+fit_elk <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_elk, start = f_starts_elk)
+fit_bsug <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_bsug, start = f_starts_bsug)
+
+
+#Get coefficients from the model fit
+elk_coefficients <- coef(fit_elk)
+    #Linf = 391.04
+    #K = 0.44
+    #t0 = 0.01
+
+bsug_coefficients <- coef(fit_bsug)
+    #Linf = 476.84
+    #K = 0.25
+    #t0 = -0.38
+
+elk_bootstrap <- Boot(fit_elk) #997 out of 999 attempted
+bsug_bootstrap <- Boot(fit_bsug) #998 out of 999 attempted
+
+elk_confint <- confint(elk_bootstrap)
+bsug_confint <- confint(bsug_bootstrap)
+
+elk_pred <- predict(fit_elk,data.frame(consensus_age=2:8))
+bsug_pred <- predict(fit_bsug,data.frame(consensus_age=2:7))
+
+
+#write functions to bootstrap over individual ages
+pred_2_function_elk <- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:8
+pred_2_function_elk(fit_elk)
+
+pred_2_function_bsug <- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:7
+pred_2_function_bsug(fit_bsug)
+
+
+ages <- seq(-1,15,by=0.2)
+elk_indiv_boot <- Boot(fit_elk, f = pred_2_function_elk) #995 out of 999
+
+ages <- seq(-1,15,by=0.2)
+bsug_indiv_boot <- Boot(fit_bsug, f = pred_2_function_bsug) #996 out of 999
+
+
+preds1_elk <- data.frame(ages,
+                     predict(fit_elk,data.frame(consensus_age=ages)),
+                     confint(elk_indiv_boot))
+names(preds1_elk) <- c("age","fit","LCI","UCI")
+preds1_elk$river <- c(rep("ELK",times=81))
+
+
+preds1_bsug <- data.frame(ages,
+                     predict(fit_bsug,data.frame(consensus_age=ages)),
+                     confint(bsug_indiv_boot))
+names(preds1_bsug) <- c("age","fit","LCI","UCI")
+preds1_bsug$river <- c(rep("BSUG",times=81))
+
+
+preds1_all_rivers <- rbind(preds1_elk,
+                        preds1_bsug)
+
+
+preds1_obs_elk <- filter(preds1_elk,age>=2,age<=8)
+preds1_obs_elk$river <- c(rep("ELK",times=31))
+
+preds1_obs_bsug <- filter(preds1_bsug,age>=2,age<=7)
+preds1_obs_bsug$river <- c(rep("BSUG",times=26))
+
+preds1_obs_all_rivers <- rbind(preds1_obs_elk,
+                        preds1_obs_bsug)
+```
+
+
 ## Plotting
 ```{r}
 #Plot von Bert growth for all admixture status groups (Pure Neosho, Pure Northern, and Admixed)
@@ -281,15 +382,16 @@ vonbert_admix_status <- ggplot() +
   geom_line(data=preds1_all_smb, aes(x=age, y=fit, linetype = hyb_status)) +
   theme_set(theme_cowplot(12)) +
   scale_fill_manual(values=c("mediumpurple","deepskyblue","deeppink2")) +
-  scale_y_continuous(name="Total Length (mm)",limits=c(0,500),expand=c(0,0)) +
+  scale_y_continuous(name="Total Length (mm)",limits=c(0,530),expand=c(0,0)) +
   scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
   labs(fill = "Admixture Status", linetype = "Admixture Status") +
   theme(axis.title = element_text(size = 15)) + 
-  theme(legend.position = c(0.7,0.4)) +
+  theme(legend.position = c(0.5,0.4)) +
   theme(legend.title = element_text(face="bold",size = 15)) +
   theme(legend.text = element_text(size = 15)) +
   theme(axis.text = element_text(size = 12)) +
-  scale_alpha(guide = 'none')
+  scale_alpha(guide = 'none') +
+  theme(axis.title.y = element_blank())
 
 pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/growth_figures/von_bert_admixture_groups.pdf", width = 7, height = 5)
 
@@ -299,7 +401,7 @@ ggplot() +
   geom_line(data=preds1_all_smb, aes(x=age, y=fit, linetype = hyb_status)) +
   theme_set(theme_cowplot(12)) +
   scale_fill_manual(values=c("mediumpurple","deepskyblue","deeppink2")) +
-  scale_y_continuous(name="Total Length (mm)",limits=c(0,500),expand=c(0,0)) +
+  scale_y_continuous(name="Total Length (mm)",limits=c(0,520),expand=c(0,0)) +
   scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
   labs(fill = "Admixture Status", linetype = "Admixture Status") +
   theme(axis.title = element_text(size = 15)) + 
@@ -322,11 +424,13 @@ vonbert_sex <- ggplot() +
   scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
   labs(fill = "Sex", linetype = "Sex") +
   theme(axis.title = element_text(size = 15)) + 
-  theme(legend.position = c(0.7,0.4)) +
+  theme(legend.position = c(0.5,0.4)) +
   theme(legend.title = element_text(face="bold",size = 15)) +
   theme(legend.text = element_text(size = 15)) +
   theme(axis.text = element_text(size = 12)) +
-  scale_alpha(guide = 'none')
+  scale_alpha(guide = 'none') +
+  theme(axis.title.y = element_blank())
+
 
 pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/growth_figures/von_bert_sexes.pdf", width = 7, height = 5)
 
@@ -345,6 +449,41 @@ ggplot() +
   theme(legend.text = element_text(size = 15)) +
   theme(axis.text = element_text(size = 12)) +
   scale_alpha(guide = 'none')
+
+dev.off()
+
+preds1_all_rivers <- preds1_all_rivers %>%
+  mutate(river = factor(river))
+
+levels(preds1_all_rivers$river) <- c("Big Sugar Creek", "Elk River")
+levels(smbfit_age_data_clean_actual$river) <- c("Big Sugar Creek", "Elk River")
+
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/growth_figures/von_bert_rivers.pdf", width = 7, height = 5)
+
+vonbert_river <- ggplot() + 
+  geom_ribbon(data=preds1_all_rivers, aes(x = age, ymin = LCI, ymax = UCI,fill = river, alpha=0.01,), show.legend = F) +
+  geom_point(data=smbfit_age_data_clean_actual, aes(x = consensus_age, y = tl_alive, fill = river), show.legend = T, size=2, pch=21, position = position_jitter(width = 0.2)) + 
+  geom_line(data=preds1_all_rivers, aes(x=age, y=fit, linetype = river)) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values=c("grey","black")) +
+  scale_y_continuous(name="Total Length (mm)",limits=c(0,520),expand=c(0,0)) +
+  scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
+  labs(fill = "River", linetype = "River") +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(legend.position = c(0.5,0.4)) +
+  theme(legend.title = element_text(face="bold",size = 15)) +
+  theme(legend.text = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 12)) +
+  scale_alpha(guide = 'none') 
+
+dev.off()
+
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/growth_figures/all_von_berts.pdf", width = 15, height = 5)
+
+plot_grid(vonbert_river,
+          vonbert_sex,
+          vonbert_admix_status,
+          nrow=1)
 
 dev.off()
 ```
