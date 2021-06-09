@@ -1,0 +1,111 @@
+---
+title: "SMB_Fitness_HFC"
+author: "Joe Gunn"
+date: "6/6/2021"
+output: html_document
+---
+
+## Read in libraries needed for analysis
+```{r, include=FALSE}
+library(readxl)
+library(tidyverse)
+library(cowplot)
+library(inbreedR)
+install.packages("Rhh")
+```
+
+
+
+
+
+## Read in all non-genetic data (including morphometrics, sex, otolith consensus age, etc.)
+```{r}
+smbfit_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
+
+smbfit_data <- smbfit_data %>%
+  mutate(tl_alive = as.numeric(tl_alive))
+
+#Change all character variables to factors
+smbfit_data[sapply(smbfit_data, is.character)] <- lapply(smbfit_data[sapply(smbfit_data, is.character)], as.factor)
+
+##Get rid of any rows with NA
+smbfit_noNA <- smbfit_data %>%
+  drop_na()
+
+```
+
+## Read in genotype data (from genotype file, with microsatellite loci in columns and samples in rows, each entry is a diploid genotype)
+```{r}
+smbfit_msat_data <- read_population("../../raw_data/genotype_data/genotype_files/smbfit_msat_genotypes.csv", type = "column", locus.columns = 2:29)
+
+#Data Cleaning:
+
+#Change categorical variables to factors
+smbfit_msat_data$sample_id <- as.factor(smbfit_msat_data$sample_id)
+```
+
+## Calculate observed heterozygosity for each individual across all loci (proportion of loci that have heterozygous genotype)
+```{r}
+#calculate observed heterozygosity per locus (give the sample a "1" if heterozygous, "0" if homozygous)
+Ho_per_loc <- genetic_diversity(smbfit_msat_data, 
+                                stratum = "sample_id", 
+                                mode = c("Ho")) 
+
+#Figure out how many loci are represented (have a genotype call) for each individual sample
+
+#Count the number of NAs per individual, because we cannot include in the total number of markers those that did not have a genotype call
+    Ho_count_NA <- Ho_per_loc %>%
+      mutate(Stratum = factor(Stratum)) %>%
+      group_by(Stratum) %>%
+      summarize(sum_na = sum(is.na(Ho)))
+
+#Subtract total number of NAs per individual from 14 (which is the total number of starting loci)
+    Ho_count_NA$sum_loc <- with(Ho_count_NA, 14 - sum_na)
+    
+    
+#Update the heterozygosity per locus dataset to omit NAs
+Ho_per_loc_noNA <- Ho_per_loc %>%
+  as.data.frame() %>%
+  mutate(Stratum = factor(Stratum), Locus = factor(Locus)) %>%
+  drop_na()
+
+#Calculate total number of heterozygous loci per individual
+Ho_per_ind <- Ho_per_loc_noNA %>%
+  group_by(Stratum) %>%
+  summarize(tot_ho = sum(Ho)) 
+
+#Add per-individual heterozygosity to sum of loci dataset
+Ho_per_ind <- Ho_per_ind %>%
+  left_join(Ho_count_NA, by = "Stratum")
+
+
+#Calculate per-individual Heterozygosity
+Ho_per_ind$Ho <- with(Ho_per_ind, tot_ho/sum_loc)
+
+colnames(Ho_per_ind)[1] <- "sample_id"
+
+
+#join heterozygosity data with all non-genetic data
+smbfit_data_het <- smbfit_data %>%
+  left_join(Ho_per_ind, by = "sample_id")
+
+
+
+
+smbfit_data_het$log10_wt <- with(smbfit_data_het, 3.2*log10(tl_alive) - 5.329)
+smbfit_data_het$stand_wt <- with(smbfit_data_het, 10^log10_wt)
+smbfit_data_het$tl_by_sl <- with(smbfit_data_het, tl_alive/sl)
+smbfit_data_het$condition <- with(smbfit_data_het, mass_g/stand_wt)
+
+smbfit_data_het_age2 <- smbfit_data_het %>%
+  filter(consensus_age == "2")
+
+ggplot(smbfit_data_het, aes(x = prop_nor, y = condition)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+
+ggplot(smbfit_data_het, aes(x = hyb_status, y = )) + 
+  geom_boxplot()
+
+summary(lm(condition ~ Ho, smbfit_data_het))
+```
