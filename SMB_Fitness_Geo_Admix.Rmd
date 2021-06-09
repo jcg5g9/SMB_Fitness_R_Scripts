@@ -12,6 +12,8 @@ library(tidyverse)
 library(cowplot)
 library(nlme)
 library(bbmle)
+library(MuMIn)
+
 ```
 
 # Read in raw working data
@@ -114,14 +116,17 @@ dev.off()
 
 ## Run linear mixed effect models for each of the above plots, taking sex into account as a random effect
 ```{r}
-
-summary(lme(prop_nor_no_hsyc ~ dist_from_df, random = ~1|sex, data = smbfit_data_bsug))
+coef(summary(lmer(prop_nor_no_hsyc ~ dist_from_df + (1|sex), data = smbfit_data_bsug)))
+r.squaredGLMM(lmer(prop_nor_no_hsyc ~ dist_from_df + (1|sex), data = smbfit_data_bsug))
 #p = 0.367
+#R2 = 0.019
 
-summary(lme(prop_nor_no_hsyc ~ dist_from_hw, random = ~1|sex, data = smbfit_data_elk))
+coef(summary(lmer(prop_nor_no_hsyc ~ dist_from_hw + (1|sex), data = smbfit_data_elk)))
+r.squaredGLMM(lmer(prop_nor_no_hsyc ~ dist_from_hw + (1|sex), data = smbfit_data_elk))
 #p = 0.445
+#R2 = 0.008
 
-summary(lme(prop_nor_no_hsyc ~ river, random = ~1|sex, data = smbfit_data_gen_plot))
+summary(lmer(prop_nor_no_hsyc ~ river + (1|sex), data = smbfit_data_gen_plot))
 #p = 0.526
 ```
 
@@ -200,5 +205,5 @@ summary(lm(prop_nor ~ dist, data = smbfit_hyb_status_proportions))
 #p = 0.1735
 
 summary(lm(prop_nor ~ dist, data = smbfit_hyb_status_proportions_bsug))
-#p = 0.526
+#p = 0.084
 ```
