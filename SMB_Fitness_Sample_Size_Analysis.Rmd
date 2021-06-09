@@ -16,14 +16,16 @@ library(cowplot)
 smbfit_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
 
 #Clean up and prepare dataset for plotting size distributions
-smbfit_data_size_dist <- smbfit_data[,c(1,5,11,12,24)]
+smbfit_data_size_dist <- smbfit_data[,c(1,5,11,12,18,24,34)]
 
 smbfit_data_size_dist <- smbfit_data_size_dist %>%
   mutate(sample_id = factor(sample_id),
          river = factor(river),
          sex = factor(sex),
          tl_alive = as.numeric(tl_alive), 
-         size_category = factor(size_category))
+         size_category = factor(size_category),
+         hyb_status = factor(hyb_status),
+         consensus_age = as.numeric(consensus_age))
 
 #Drop the one NA in the dataset where I don't have total length for the fish
 smbfit_data_size_dist <- smbfit_data_size_dist %>%
@@ -51,6 +53,13 @@ smbfit_num_per_size_by_sex <- smbfit_data_size_dist %>%
   count() %>%
   as.data.frame()
 
+#Get total number of samples per size category, per genetic id
+smbfit_num_per_size_by_gen_id <- smbfit_data_size_dist %>%
+  group_by(size_category, hyb_status) %>%
+  count() %>%
+  as.data.frame()
+
+
 
 #Prepare datasets by creating columns with readable names
 smbfit_num_per_size_by_river$river_name <- c("Big Sugar Creek", "Elk River","Big Sugar Creek", "Elk River","Big Sugar Creek", "Elk River","Big Sugar Creek", "Elk River","Big Sugar Creek", "Elk River","Big Sugar Creek", "Elk River","Big Sugar Creek", "Elk River","Big Sugar Creek", "Elk River")
@@ -59,56 +68,175 @@ smbfit_num_per_size_by_sex$sex_name <- c("Female", "Male","Female", "Male","Fema
 
 smbfit_num_per_size_by_sex$size_bins <- c("200-225","200-225","225-250","225-250","250-275","250-275","275-300","275-300","300-325","300-325","325-350","325-350","350-375","350-375","375-400+","375-400+")
                                
-                                                             
-                                                    
+smbfit_num_per_size_by_gen_id$size_bins <- c("200-225","200-225","200-225","225-250","225-250","225-250","250-275","250-275","250-275","275-300","275-300","275-300","300-325","300-325","300-325","325-350","325-350","325-350","350-375","350-375","350-375","375-400+","375-400+")                                                            
+
+smbfit_num_per_size_by_river$size_bins <- c("200-225","200-225","225-250","225-250","250-275","250-275","275-300","275-300","300-325","300-325","325-350","325-350","350-375","350-375","375-400+","375-400+")                                             
+
+smbfit_num_per_size_by_gen_id_last_row <- data.frame(size_category = c("8"), hyb_status = c("Northern"), n = c("0"), size_bins = c("375-400+")) 
+
+smbfit_num_per_size_by_gen_id_last_row <- smbfit_num_per_size_by_gen_id_last_row %>%
+  mutate(size_category = factor(size_category),
+         hyb_status = factor(hyb_status),
+         n = as.numeric(n),
+         size_bins = factor(size_bins))
+
+smbfit_num_per_size_by_gen_id_with_new_row <- rbind(smbfit_num_per_size_by_gen_id,smbfit_num_per_size_by_gen_id_last_row)
 
 
 #Plot total number of samples per size category
 smb_fit_size_dist_total <- ggplot(smbfit_num_per_size_total, aes(x = size_category, y = n)) + 
   geom_bar(stat = "identity", color = "black", fill = "grey") + 
   theme_set(theme_cowplot(12)) +
-  labs(x = "Size Category", y = "Number of Individuals") + 
-  theme(axis.text.y = element_text(size = 15)) +
-  theme(axis.title.y = element_text(size = 15)) +
+  labs(x = "Size Category", y = "N") + 
+  theme(axis.title.y = element_text(face = "italic")) +
+  theme(axis.text.y = element_text(size = 20)) +
+  theme(axis.title = element_text(size = 20)) +
   theme(axis.text.x = element_blank()) +
-  theme(axis.title.x = element_blank())
+  scale_y_continuous(expand=c(0,0), limits=c(0,22), breaks = seq(0,22,2)) 
 
 #Plot total number of samples per size category, per river
 smb_fit_size_dist_river <- ggplot(smbfit_num_per_size_by_river, aes(x = size_category, y = n, fill = river_name)) + 
   geom_bar(stat = "identity", position = position_dodge(), color = "black") + 
   theme_set(theme_cowplot(12)) +
   labs(x = "Size Bins (mm)", y = "Number of Individuals", fill = "River") + 
-  scale_fill_manual(values = c("grey","black")) +
-  theme(legend.title = element_text(size = 15, face = "bold")) +
-  theme(legend.position = c(0.65,0.8)) +
-  theme(legend.text = element_text(size = 15)) +
-  theme(axis.text.y = element_text(size = 15)) +
-  theme(axis.title.y = element_text(size = 15)) +
+  scale_fill_manual(values = c("orchid1","sienna4")) +
+  theme(legend.title = element_text(size = 20, face = "bold")) +
+  theme(legend.position = c(0.05,0.85)) +
+  theme(legend.text = element_text(size = 20)) +
+  theme(axis.text.y = element_text(size = 20)) +
+  theme(axis.title = element_text(size = 20)) +
   theme(axis.text.x = element_blank()) +
-  theme(axis.title.x = element_blank())
+  scale_y_continuous(expand=c(0,0), limits=c(0,22), breaks = seq(0,22,2)) 
 
 #Plot total number of samples per size category, per sex
 smb_fit_size_dist_sex <- ggplot(smbfit_num_per_size_by_sex, aes(x = size_bins, y = n, fill = sex_name)) + 
   geom_bar(stat = "identity", position = position_dodge(), color = "black") + 
   theme_set(theme_cowplot(12)) +
-  labs(x = "Size Bins (mm)", y = "Number of Individuals", fill = "Sex") + 
-  scale_fill_manual(values = c("grey","black")) +
-  theme(legend.title = element_text(size = 15, face = "bold")) +
-  theme(legend.position = c(0.65,0.8)) +
-  theme(legend.text = element_text(size = 15)) +
-  theme(axis.text = element_text(size = 15)) +
+  labs(x = "Size Bins (mm)", y = "N", fill = "Sex") + 
+  scale_fill_manual(values = c("mediumspringgreen","coral1")) +
+  theme(legend.title = element_text(size = 20, face = "bold")) +
+  theme(axis.title.y = element_text(face = "italic")) +
+  theme(legend.position = c(0.05,0.85)) +
+  theme(legend.text = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 20)) +
   theme(axis.text.x = element_text(angle = 30, hjust = 0.9)) +
-  theme(axis.title = element_text(size = 15))
+  theme(axis.title = element_text(size = 20)) + 
+  scale_y_continuous(expand=c(0,0), limits=c(0,22), breaks = seq(0,22,2)) 
+
+#Plot total number of samples per size category, per genetic id
+smb_fit_size_dist_gen_id <- ggplot(smbfit_num_per_size_by_gen_id_with_new_row, aes(x = size_bins, y = n, fill = hyb_status)) + 
+  geom_bar(stat = "identity", position = position_dodge(), color = "black") + 
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Size Bins (mm)", y = "N", fill = "Admixture Status") + 
+  scale_fill_manual(values = c("mediumpurple","deepskyblue","deeppink2")) +
+  theme(legend.title = element_text(size = 20, face = "bold")) +
+  theme(axis.title.y = element_text(face = "italic")) +
+  theme(legend.position = c(0.05,0.85)) +
+  theme(legend.text = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 20)) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 0.9)) +
+  theme(axis.title = element_text(size = 20)) + 
+  scale_y_continuous(expand=c(0,0), limits=c(0,22), breaks = seq(0,22,2)) 
+
+
+
+
+
 
 #Plot all size distributions (total, by river, and by sex)
-pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/sample_visualization/total_sample_distribution.pdf", width = 6, height = 12)
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/sample_visualization/total_sample_distribution.pdf", width = 14, height = 12)
 
 plot_grid(smb_fit_size_dist_total, 
           smb_fit_size_dist_river, 
           smb_fit_size_dist_sex,
-          ncol = 1, 
-          labels = c("a","b","c"), 
-          label_size = 20)
+          smb_fit_size_dist_gen_id,
+          ncol = 2, 
+          labels = c("a","b","c","d"), 
+          label_size = 30,
+          label_x = -0.01,
+          label_y = 1.02)
 
 dev.off()
 ```
+
+## Get number of pure Neosho, Northern, and Admixed fish per River
+```{r}
+smbfit_gen_per_river <- smbfit_data_size_dist %>%
+  group_by(river,hyb_status) %>%
+  count() %>%
+  as.data.frame()
+
+smbfit_sex_per_river <- smbfit_data_size_dist %>%
+  group_by(river,sex) %>%
+  count() %>%
+  as.data.frame()
+
+
+levels(smbfit_gen_per_river$river) <- c("Big Sugar Creek", "Elk River")
+levels(smbfit_sex_per_river$river) <- c("Big Sugar Creek", "Elk River")
+
+#plot genetic id by river
+smb_fit_gen_by_river <- ggplot(smbfit_gen_per_river, aes(x = river, y = n, fill = hyb_status)) + 
+  geom_bar(stat = "identity", position = "dodge", width =0.5, color = "black") + 
+  theme_set(theme_cowplot(12)) +
+  labs(x = "River", y = "Number of Individuals", fill = "Admixture Status") + 
+  scale_fill_manual(values = c("mediumpurple","deepskyblue","deeppink2")) +
+  theme(legend.title = element_text(size = 15, face = "bold")) +
+  theme(legend.position = c(0.05,0.85)) +
+  theme(legend.text = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 15)) +
+  theme(axis.text.x = element_text(hjust = 0.5)) +
+  theme(axis.title = element_text(size = 15))
+
+#plot sex by river
+smb_fit_sex_by_river <- ggplot(smbfit_sex_per_river, aes(x = river, y = n, fill = sex)) + 
+  geom_bar(stat = "identity", position = "dodge", width =0.5, color = "black", show.legend = F) + 
+  theme_set(theme_cowplot(12)) +
+  labs(x = "River", y = "Number of Individuals", fill = "Sex") + 
+  scale_fill_manual(values = c("mediumspringgreen","coral1")) +
+  theme(legend.title = element_text(size = 15, face = "bold")) +
+  theme(legend.position = c(0.05,0.85)) +
+  theme(legend.text = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 15)) +
+  theme(axis.text.x = element_text(hjust = 0.5)) +
+  theme(axis.title = element_text(size = 15))
+
+
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/sample_visualization/gen_by_river.pdf", width = 6, height = 4)
+
+ggplot(smbfit_gen_per_river, aes(x = river, y = n, fill = hyb_status)) + 
+  geom_bar(stat = "identity", position = "dodge", width =0.5, color = "black",show.legend = F) + 
+  theme_set(theme_cowplot(12)) +
+  labs(x = "River", y = "N", fill = "Admixture Status") + 
+  scale_fill_manual(values = c("mediumpurple","deepskyblue","deeppink2")) +
+  theme(legend.title = element_text(size = 15, face = "bold")) +
+  theme(legend.position = c(0.05,0.85)) +
+  theme(legend.text = element_text(size = 25)) +
+  theme(axis.title.y = element_text(face = "italic")) +
+  theme(axis.text = element_text(size = 25)) +
+  theme(axis.text.x = element_text(hjust = 0.5)) +
+  theme(axis.title = element_text(size = 25)) +
+  theme(axis.title.x = element_blank()) +
+  scale_y_continuous(expand=c(0,0)) 
+
+dev.off()
+
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/sample_visualization/sex_by_river.pdf", width = 6, height = 4)
+
+ggplot(smbfit_sex_per_river, aes(x = river, y = n, fill = sex)) + 
+  geom_bar(stat = "identity", position = "dodge", width =0.5, color = "black", show.legend = F) + 
+  theme_set(theme_cowplot(12)) +
+  labs(x = "River", y = "N", fill = "Sex") + 
+  scale_fill_manual(values = c("mediumspringgreen","coral1")) +
+  theme(legend.title = element_text(size = 25, face = "bold")) +
+  theme(legend.position = c(0.05,0.85)) +
+  theme(legend.text = element_text(size = 25)) +
+  theme(axis.title.y = element_text(face = "italic")) +
+  theme(axis.text = element_text(size = 25)) +
+  theme(axis.text.x = element_text(hjust = 0.5)) +
+  theme(axis.title = element_text(size = 25)) +
+  scale_y_continuous(expand=c(0,0)) 
+
+dev.off()
+```
+

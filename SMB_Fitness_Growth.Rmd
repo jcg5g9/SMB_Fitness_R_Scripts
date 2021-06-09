@@ -33,7 +33,7 @@ library(car)
 smbfit_raw_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
 smbfit_bc_raw_data <- read_excel("../../raw_data/backcalc_data/smbfit_bc_noHSYC.xlsx")
 
-smbfit_age_data <- smbfit_raw_data[,-c(1:4,6:11,13:17,19:23,25:31:33,35:39)]
+smbfit_age_data <- smbfit_raw_data[,-c(1:4,6:11,13:17,19:23,25:31:33,35:40)]
 smbfit_age_data$estimate <- factor(c(rep("actual",times=119)))
 
 smbfit_bc_data <- smbfit_bc_raw_data[-c(150:265),-c(1)]
@@ -50,15 +50,6 @@ smbfit_age_data_clean_noNA <- smbfit_age_data_clean[-c(47:49,119),]
 
 smbfit_age_data_clean_actual <- smbfit_age_data_clean_noNA %>%
   filter(estimate=="actual")
-
-```
-
-## Data Summary
-```{r}
-smbfit_summary <- smbfit_age_data_clean_actual %>%
-  group_by(river, hyb_status) %>%
-  count()
-
 
 ```
 
@@ -290,7 +281,7 @@ smbfit_age_bsug <- smbfit_age_data_clean_noNA %>%
 
 ```
 
-## Fit models to sexes
+## Fit models to rivers
 ```{r}
 
 
@@ -490,100 +481,352 @@ dev.off()
 
 
 
+## Here I will attempt to do two replicated growth curves, one for Elk River and one for Big Sugar Creek, running separate curves for each genetic group within each rvier.
 
-
-```
-
-## Read in all non-genetic data (including morphometrics, sex, otolith consensus age, etc.)
+## Prepare to fit von Bertalanffy growth models to genetic groups (Pure Neosho, Pure Northern, Admixed) based on results from Structure for K=2, without the Honey Creek and Sycamore Creek reference population.
 ```{r}
-smbfit_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
 
-smbfit_data <- smbfit_data %>%
-  mutate(tl_alive = as.numeric(tl_alive))
+smbfit_age_data_clean_actual_bsug <- smbfit_age_data_clean_actual %>%
+  filter(river=="BSUG")
 
-#Change all character variables to factors
-smbfit_data[sapply(smbfit_data, is.character)] <- lapply(smbfit_data[sapply(smbfit_data, is.character)], 
-                                       as.factor)
+smbfit_age_data_clean_actual_elk <- smbfit_age_data_clean_actual %>%
+  filter(river=="ELK")
+
+## BIG SUGAR CREEK
+##Split the dataset into three usable datasets for admixed individuals, pure neosho, and pure northern
+smbfit_age_bsug_admixed <- smbfit_age_bsug %>%
+  filter(hyb_status =="Admixed")
+
+smbfit_age_bsug_neosho <- smbfit_age_bsug %>%
+  filter(hyb_status =="Neosho")
+
+smbfit_age_bsug_northern <- smbfit_age_bsug %>%
+  filter(hyb_status =="Northern")
+
+
+## ELK RIVER
+##Split the dataset into three usable datasets for admixed individuals, pure neosho, and pure northern
+smbfit_age_elk_admixed <- smbfit_age_elk %>%
+  filter(hyb_status =="Admixed")
+
+smbfit_age_elk_neosho <- smbfit_age_elk %>%
+  filter(hyb_status =="Neosho")
+
+smbfit_age_elk_northern <- smbfit_age_elk %>%
+  filter(hyb_status =="Northern")
 ```
 
-## Read in genotype data (from genotype file, with microsatellite loci in columns and samples in rows, each entry is a diploid genotype)
+## Fit models to genetic groups WITHIN BIG SUGAR CREEK
 ```{r}
-smbfit_msat_data <- read_population("../../raw_data/genotype_data/genotype_files/smbfit_msat_genotypes.csv", type = "column", locus.columns = 2:29)
+#Write a funciton for optimizing the von Bert model (this is used below)
+vb_function <- vbFuns(param = "Typical")
 
-#Data Cleaning:
+#Get starting values for von Bert optimization
+f_starts_bsug_admixed <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_bsug_admixed)
+f_starts_bsug_neosho <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_bsug_neosho)
+f_starts_bsug_northern <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_bsug_northern)
 
-#Change categorical variables to factors
-smbfit_msat_data$sample_id <- as.factor(smbfit_msat_data$sample_id)
+#Fit von Bert function
+fit_bsug_admixed <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_bsug_admixed, start = f_starts_bsug_admixed)
+fit_bsug_neosho <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_bsug_neosho, start = f_starts_bsug_neosho)
+fit_bsug_northern <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_bsug_northern, start = f_starts_bsug_northern)
+
+#Get coefficients from the model fit
+bsug_admix_coefficients <- coef(fit_bsug_admixed)
+    #Linf = 474.54
+    #K = 0.26
+    #t0 = -0.31
+
+bsug_neosho_coefficients <- coef(fit_bsug_neosho)
+    #Linf = 466.32
+    #K = 0.27
+    #t0 = -0.29
+
+bsug_northern_coefficients <- coef(fit_bsug_northern)
+    #Linf = 347.20
+    #K = 0.44
+    #t0 = -0.15
+
+bsug_admix_bootstrap <- Boot(fit_bsug_admixed) #996 out of 999 attempted
+bsug_neosho_bootstrap <- Boot(fit_bsug_neosho) #997 out of 999 attempted
+bsug_northern_bootstrap <- Boot(fit_bsug_northern) #919 out of 999 attempted
+
+bsug_admix_confint <- confint(bsug_admix_bootstrap)
+bsug_neosho_confint <- confint(bsug_neosho_bootstrap)
+bsug_northern_confint <- confint(bsug_northern_bootstrap)
+
+bsug_admix_pred <- predict(fit_bsug_admixed,data.frame(consensus_age=2:7))
+bsug_neosho_pred <- predict(fit_bsug_neosho,data.frame(consensus_age=2:7))
+bsug_northern_pred <- predict(fit_bsug_northern,data.frame(consensus_age=2:4)) 
+
+#write functions to bootstrap over individual ages
+bsug_pred_2_function_admix <- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:7
+bsug_pred_2_function_admix(fit_bsug_admixed)
+
+bsug_pred_2_function_neosho <- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:7
+bsug_pred_2_function_neosho(fit_bsug_neosho)
+
+bsug_pred_2_function_northern<- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:4
+bsug_pred_2_function_admix(fit_bsug_northern)
+
+
+ages <- seq(-1,15,by=0.2)
+bsug_admix_indiv_boot <- Boot(fit_bsug_admixed, f = bsug_pred_2_function_admix) #998 out of 999
+
+ages <- seq(-1,15,by=0.2)
+bsug_neosho_indiv_boot <- Boot(fit_bsug_neosho, f = bsug_pred_2_function_neosho) #997 out of 999
+
+ages <- seq(-1,15,by=0.2)
+bsug_northern_indiv_boot <- Boot(fit_bsug_northern, f = bsug_pred_2_function_northern) #998 out of 999
+
+preds1_bsug_admix <- data.frame(ages,
+                     predict(fit_bsug_admixed,data.frame(consensus_age=ages)),
+                     confint(bsug_admix_indiv_boot))
+names(preds1_bsug_admix) <- c("age","fit","LCI","UCI")
+preds1_bsug_admix$hyb_status <- c(rep("Admixed",times=81))
+
+
+preds1_bsug_neosho <- data.frame(ages,
+                     predict(fit_bsug_neosho,data.frame(consensus_age=ages)),
+                     confint(bsug_neosho_indiv_boot))
+names(preds1_bsug_neosho) <- c("age","fit","LCI","UCI")
+preds1_bsug_neosho$hyb_status <- c(rep("Neosho",times=81))
+
+preds1_bsug_northern <- data.frame(ages,
+                     predict(fit_bsug_northern,data.frame(consensus_age=ages)),
+                     confint(bsug_northern_indiv_boot))
+names(preds1_bsug_northern) <- c("age","fit","LCI","UCI")
+preds1_bsug_northern$hyb_status <- c(rep("Northern",times=81))
+
+bsug_preds1_all_smb <- rbind(preds1_bsug_admix,
+                        preds1_bsug_neosho,
+                        preds1_bsug_northern)
+
+
+bsug_preds1_all_smb$river <- c(rep("Big Sugar Creek",times=243))
+
+bsug_preds1_obs_admix <- filter(preds1_bsug_admix,age>=2,age<=7)
+bsug_preds1_obs_admix$hyb_status <- c(rep("Admixed",times=26))
+
+bsug_preds1_obs_neosho <- filter(preds1_bsug_neosho,age>=2,age<=7)
+bsug_preds1_obs_neosho$hyb_status <- c(rep("Neosho",times=26))
+
+bsug_preds1_obs_northern <- filter(preds1_bsug_northern,age>=2,age<=4)
+bsug_preds1_obs_northern$hyb_status <- c(rep("Northern",times=11))
+
+bsug_preds1_obs_all_smb <- rbind(bsug_preds1_obs_admix,
+                        bsug_preds1_obs_neosho,
+                        bsug_preds1_obs_northern)
+
+bsug_preds1_all_smb_positive <- bsug_preds1_all_smb[-c(1:10),]
 ```
 
-## Calculate observed heterozygosity for each individual across all loci (proportion of loci that have heterozygous genotype)
+
+## Fit models to genetic groups WITHIN ELK RIVER
 ```{r}
-#calculate observed heterozygosity per locus (give the sample a "1" if heterozygous, "0" if homozygous)
-Ho_per_loc <- genetic_diversity(smbfit_msat_data, 
-                                stratum = "sample_id", 
-                                mode = c("Ho")) 
+#Write a funciton for optimizing the von Bert model (this is used below)
+vb_function <- vbFuns(param = "Typical")
 
-#Figure out how many loci are represented (have a genotype call) for each individual sample
+#Get starting values for von Bert optimization
+f_starts_elk_admixed <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_elk_admixed)
+f_starts_elk_neosho <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_elk_neosho)
+f_starts_elk_northern <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_elk_northern)
 
-#Count the number of NAs per individual, because we cannot include in the total number of markers those that did not have a genotype call
-    Ho_count_NA <- Ho_per_loc %>%
-      mutate(Stratum = factor(Stratum)) %>%
-      group_by(Stratum) %>%
-      summarize(sum_na = sum(is.na(Ho)))
+#Fit von Bert function
+fit_elk_admixed <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_elk_admixed, start = f_starts_elk_admixed)
+fit_elk_neosho <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_elk_neosho, start = f_starts_elk_neosho)
+fit_elk_northern <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_elk_northern, start = f_starts_elk_northern)
 
-#Subtract total number of NAs per individual from 14 (which is the total number of starting loci)
-    Ho_count_NA$sum_loc <- with(Ho_count_NA, 14 - sum_na)
-    
-    
-#Update the heterozygosity per locus dataset to omit NAs
-Ho_per_loc_noNA <- Ho_per_loc %>%
-  as.data.frame() %>%
-  mutate(Stratum = factor(Stratum), Locus = factor(Locus)) %>%
-  drop_na()
+#Get coefficients from the model fit
+elk_admix_coefficients <- coef(fit_elk_admixed)
+    #Linf = 353.19
+    #K = 0.57
+    #t0 = 0.13
 
-#Calculate total number of heterozygous loci per individual
-Ho_per_ind <- Ho_per_loc_noNA %>%
-  group_by(Stratum) %>%
-  summarize(tot_ho = sum(Ho)) 
+elk_neosho_coefficients <- coef(fit_elk_neosho)
+    #Linf = 406.15
+    #K = 0.39
+    #t0 = -0.21
 
-#Add per-individual heterozygosity to sum of loci dataset
-Ho_per_ind <- Ho_per_ind %>%
-  left_join(Ho_count_NA, by = "Stratum")
+elk_northern_coefficients <- coef(fit_elk_northern)
+    #Linf = 438.20
+    #K = 0.33
+    #t0 = -0.07
+
+elk_admix_bootstrap <- Boot(fit_elk_admixed) #998 out of 999 attempted
+elk_neosho_bootstrap <- Boot(fit_elk_neosho) #989 out of 999 attempted
+elk_northern_bootstrap <- Boot(fit_elk_northern) #919 out of 999 attempted
+
+elk_admix_confint <- confint(elk_admix_bootstrap)
+elk_neosho_confint <- confint(elk_neosho_bootstrap)
+elk_northern_confint <- confint(elk_northern_bootstrap)
+
+elk_admix_pred <- predict(fit_elk_admixed,data.frame(consensus_age=2:8))
+elk_neosho_pred <- predict(fit_elk_neosho,data.frame(consensus_age=2:7))
+elk_northern_pred <- predict(fit_elk_northern,data.frame(consensus_age=2:7)) 
+
+#write functions to bootstrap over individual ages
+elk_pred_2_function_admix <- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:8
+elk_pred_2_function_admix(fit_elk_admixed)
+
+elk_pred_2_function_neosho <- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:7
+elk_pred_2_function_neosho(fit_elk_neosho)
+
+elk_pred_2_function_northern<- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:7
+elk_pred_2_function_admix(fit_elk_northern)
 
 
-#Calculate per-individual Heterozygosity
-Ho_per_ind$Ho <- with(Ho_per_ind, tot_ho/sum_loc)
+ages <- seq(-1,15,by=0.2)
+elk_admix_indiv_boot <- Boot(fit_elk_admixed, f = elk_pred_2_function_admix) #998 out of 999
 
-colnames(Ho_per_ind)[1] <- "sample_id"
+ages <- seq(-1,15,by=0.2)
+elk_neosho_indiv_boot <- Boot(fit_elk_neosho, f = elk_pred_2_function_neosho) #997 out of 999
+
+ages <- seq(-1,15,by=0.2)
+elk_northern_indiv_boot <- Boot(fit_elk_northern, f = elk_pred_2_function_northern) #998 out of 999
+
+preds1_elk_admix <- data.frame(ages,
+                     predict(fit_elk_admixed,data.frame(consensus_age=ages)),
+                     confint(elk_admix_indiv_boot))
+names(preds1_elk_admix) <- c("age","fit","LCI","UCI")
+preds1_elk_admix$hyb_status <- c(rep("Admixed",times=81))
 
 
-#join heterozygosity data with all non-genetic data
-smbfit_data_het <- smbfit_data %>%
-  left_join(Ho_per_ind, by = "sample_id")
+preds1_elk_neosho <- data.frame(ages,
+                     predict(fit_elk_neosho,data.frame(consensus_age=ages)),
+                     confint(elk_neosho_indiv_boot))
+names(preds1_elk_neosho) <- c("age","fit","LCI","UCI")
+preds1_elk_neosho$hyb_status <- c(rep("Neosho",times=81))
+
+preds1_elk_northern <- data.frame(ages,
+                     predict(fit_elk_northern,data.frame(consensus_age=ages)),
+                     confint(elk_northern_indiv_boot))
+names(preds1_elk_northern) <- c("age","fit","LCI","UCI")
+preds1_elk_northern$hyb_status <- c(rep("Northern",times=81))
+
+elk_preds1_all_smb <- rbind(preds1_elk_admix,
+                        preds1_elk_neosho,
+                        preds1_elk_northern)
+
+elk_preds1_all_smb$river <- c(rep("Elk River",times=243))
 
 
+elk_preds1_obs_admix <- filter(preds1_elk_admix,age>=2,age<=8)
+elk_preds1_obs_admix$hyb_status <- c(rep("Admixed",times=31))
 
+elk_preds1_obs_neosho <- filter(preds1_elk_neosho,age>=2,age<=7)
+elk_preds1_obs_neosho$hyb_status <- c(rep("Neosho",times=26))
 
-smbfit_data_het$log10_wt <- with(smbfit_data_het, 3.2*log10(tl_alive) - 5.329)
-smbfit_data_het$stand_wt <- with(smbfit_data_het, 10^log10_wt)
-smbfit_data_het$tl_by_sl <- with(smbfit_data_het, tl_alive/sl)
-smbfit_data_het$condition <- with(smbfit_data_het, mass_g/stand_wt)
+elk_preds1_obs_northern <- filter(preds1_elk_northern,age>=2,age<=7)
+elk_preds1_obs_northern$hyb_status <- c(rep("Northern",times=26))
 
-smbfit_data_het_age2 <- smbfit_data_het %>%
-  filter(consensus_age == "2")
+elk_preds1_obs_all_smb <- rbind(elk_preds1_obs_admix,
+                        elk_preds1_obs_neosho,
+                        elk_preds1_obs_northern)
 
-ggplot(smbfit_data_het, aes(x = prop_nor, y = condition)) + 
-  geom_point() +
-  geom_smooth(method = "lm")
-
-ggplot(smbfit_data_het, aes(x = hyb_status, y = )) + 
-  geom_boxplot()
-
-summary(lm(condition ~ Ho, smbfit_data_het))
+elk_preds1_all_smb_positive <- elk_preds1_all_smb[-c(1:10),]
 ```
 
+```{r}
+
+preds1_all_smb_both_rivers <- rbind(bsug_preds1_all_smb, elk_preds1_all_smb)
+levels(smbfit_age_data_clean_actual$river) <- c("Big Sugar Creek","Elk River")
+
+vonbert_admix_status_both_rivers <- ggplot() + 
+  geom_ribbon(data=preds1_all_smb_both_rivers, aes(x = age, ymin = LCI, ymax = UCI, fill = hyb_status, alpha=0.01,), show.legend = F) +
+  geom_point(data=smbfit_age_data_clean_actual,aes(x = consensus_age,y = tl_alive, fill = hyb_status), show.legend = T, size=3, pch=21, position = position_jitter(width = 0.3)) + 
+  geom_line(data=preds1_all_smb_both_rivers, aes(x=age, y=fit, linetype = hyb_status)) +
+  theme_set(theme_cowplot(12)) +
+  facet_wrap(~river, ncol = 2) +
+  theme(strip.background = element_rect(fill = "white")) +
+  theme(strip.text = element_text(size = 15)) +
+  theme(panel.background = element_rect(color = "black", fill = "white", size = 1, linetype = "solid")) +
+  theme(panel.margin = unit(1, "lines")) +
+  scale_fill_manual(values=c("mediumpurple","deepskyblue","deeppink2")) +
+  scale_y_continuous(name="Total Length (mm)",limits=c(0,750),expand=c(0,0),breaks = seq(0,750,100)) +
+  scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
+  labs(fill = "Admixture Status", linetype = "Admixture Status") +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(legend.position = c(0.05,0.8)) +
+  theme(legend.title = element_text(face="bold",size = 15)) +
+  theme(legend.text = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 13)) +
+  scale_alpha(guide = 'none')
 
 
+
+
+#Plot von Bert growth for all admixture status groups (Pure Neosho, Pure Northern, and Admixed) WITHIN BIG SUGAR CREEK
+vonbert_admix_status_bsug <- ggplot() + 
+  geom_ribbon(data=bsug_preds1_all_smb, aes(x = age, ymin = LCI, ymax = UCI,fill = hyb_status, alpha=0.01,), show.legend = F) +
+  geom_point(data=smbfit_age_data_clean_actual_bsug,aes(x = consensus_age,y = tl_alive, fill = hyb_status), show.legend = T, size=3, pch=21, position = position_jitter(width = 0.3)) + 
+  geom_line(data=bsug_preds1_all_smb, aes(x=age, y=fit, linetype = hyb_status)) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values=c("mediumpurple","deepskyblue","deeppink2")) +
+  scale_y_continuous(name="Total Length (mm)",limits=c(0,750),expand=c(0,0),breaks = seq(0,750,100)) +
+  scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
+  labs(fill = "Admixture Status", linetype = "Admixture Status") +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(legend.position = c(0.05,0.8)) +
+  theme(legend.title = element_text(face="bold",size = 15)) +
+  theme(legend.text = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 13)) +
+  scale_alpha(guide = 'none')
+
+
+#Plot von Bert growth for all admixture status groups (Pure Neosho, Pure Northern, and Admixed) WITHIN BIG SUGAR CREEK
+vonbert_admix_status_elk <- ggplot() + 
+  geom_ribbon(data=elk_preds1_all_smb, aes(x = age, ymin = LCI, ymax = UCI,fill = hyb_status, alpha=0.01), show.legend = F) +
+  geom_point(data=smbfit_age_data_clean_actual_elk,aes(x = consensus_age,y = tl_alive, fill = hyb_status), show.legend = F, size=3, pch=21, position = position_jitter(width = 0.3)) + 
+  geom_line(data=elk_preds1_all_smb, aes(x=age, y=fit, linetype = hyb_status), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values=c("mediumpurple","deepskyblue","deeppink2")) +
+  scale_y_continuous(name="Total Length (mm)",limits=c(0,600),expand=c(0,0),breaks=seq(0,600,100)) +
+  scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
+  labs(fill = "Admixture Status", linetype = "Admixture Status") +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(legend.position = c(0.05,0.8)) +
+  theme(legend.title = element_text(face="bold",size = 15)) +
+  theme(legend.text = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 13)) +
+  scale_alpha(guide = 'none') +
+  theme(axis.title.y = element_blank())
+
+
+##Plot both BIG SUGAR CREEK and ELK together
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/growth_figures/von_bert_gen_by_river.pdf", width = 10, height = 5)
+
+ggplot() + 
+  geom_ribbon(data=preds1_all_smb_both_rivers, aes(x = age, ymin = LCI, ymax = UCI, fill = hyb_status, alpha=0.01,), show.legend = F) +
+  geom_point(data=smbfit_age_data_clean_actual,aes(x = consensus_age,y = tl_alive, fill = hyb_status), show.legend = T, size=3, pch=21, position = position_jitter(width = 0.3)) + 
+  geom_line(data=preds1_all_smb_both_rivers, aes(x=age, y=fit, linetype = hyb_status)) +
+  theme_set(theme_cowplot(12)) +
+  facet_wrap(~river, ncol = 2) +
+  theme(strip.background = element_rect(fill = "white")) +
+  theme(strip.text = element_text(size = 15)) +
+  theme(panel.background = element_rect(color = "black", fill = "white", size = 1, linetype = "solid")) +
+  theme(panel.margin = unit(1, "lines")) +
+  scale_fill_manual(values=c("mediumpurple","deepskyblue","deeppink2")) +
+  scale_y_continuous(name="Total Length (mm)",limits=c(0,750),expand=c(0,0),breaks = seq(0,750,100)) +
+  scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
+  labs(fill = "Admixture Status", linetype = "Admixture Status") +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(legend.position = c(0.05,0.8)) +
+  theme(legend.title = element_text(face="bold",size = 15)) +
+  theme(legend.text = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 13)) +
+  scale_alpha(guide = 'none')
+
+dev.off()
+
+
+```
 
 
 
@@ -594,42 +837,224 @@ summary(lm(condition ~ Ho, smbfit_data_het))
 
 
 
+## Here I will attempt to do two replicated growth curves, one for Elk River and one for Big Sugar Creek, running separate curves for each sex within each river.
+
+## Prepare to fit Von Bertalanffy growth models to sexes
+```{r}
+##Split the dataset into three usable datasets for admixed individuals, pure neosho, and pure northern
+
+#BIG SUGAR CREEK
+smbfit_age_bsug_male <- smbfit_age_bsug %>%
+  filter(sex =="Male")
+
+smbfit_age_bsug_female <- smbfit_age_bsug %>%
+  filter(sex =="Female")
+
+#BIG SUGAR CREEK
+smbfit_age_elk_male <- smbfit_age_elk %>%
+  filter(sex =="Male")
+
+smbfit_age_elk_female <- smbfit_age_elk %>%
+  filter(sex =="Female")
+
+```
+
+## Fit models to sexes WITHIN BIG SUGAR CREEK 
+```{r}
+
+#Write a funciton for optimizing the von Bert model (this is used below)
+vb_function <- vbFuns(param = "Typical")
+
+#Get starting values for von Bert optimization
+f_starts_bsug_male <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_bsug_male)
+f_starts_bsug_female <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_bsug_female)
+
+#Fit von Bert function
+fit_bsug_male <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_bsug_male, start = f_starts_bsug_male)
+fit_bsug_female <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_bsug_female, start = f_starts_bsug_female)
 
 
+#Get coefficients from the model fit
+bsug_male_coefficients <- coef(fit_bsug_male)
+    #Linf = 448.35
+    #K = 0.29
+    #t0 = -0.225
 
+bsug_female_coefficients <- coef(fit_bsug_female)
+    #Linf = 512.55
+    #K = 0.21
+    #t0 = -0.53
+
+bsug_male_bootstrap <- Boot(fit_bsug_male) #998 out of 999 attempted
+bsug_female_bootstrap <- Boot(fit_bsug_female) #997 out of 999 attempted
+
+bsug_male_confint <- confint(bsug_male_bootstrap)
+bsug_female_confint <- confint(bsug_female_bootstrap)
+
+bsug_male_pred <- predict(fit_bsug_male,data.frame(consensus_age=2:7))
+bsug_female_pred <- predict(fit_bsug_female,data.frame(consensus_age=2:7))
+
+
+#write functions to bootstrap over individual ages
+pred_2_function_bsug_male <- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:7
+pred_2_function_bsug_male(fit_bsug_male)
+
+pred_2_function_bsug_female <- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:7
+pred_2_function_bsug_female(fit_bsug_female)
+
+
+ages <- seq(-1,15,by=0.2)
+bsug_male_indiv_boot <- Boot(fit_bsug_male, f = pred_2_function_bsug_male) #996 out of 999
+
+ages <- seq(-1,15,by=0.2)
+bsug_female_indiv_boot <- Boot(fit_bsug_female, f = pred_2_function_bsug_female) #996 out of 999
+
+
+preds1_bsug_male <- data.frame(ages,
+                     predict(fit_bsug_male,data.frame(consensus_age=ages)),
+                     confint(bsug_male_indiv_boot))
+names(preds1_bsug_male) <- c("age","fit","LCI","UCI")
+preds1_bsug_male$sex <- c(rep("Male",times=81))
+
+
+preds1_bsug_female <- data.frame(ages,
+                     predict(fit_bsug_female,data.frame(consensus_age=ages)),
+                     confint(bsug_female_indiv_boot))
+names(preds1_bsug_female) <- c("age","fit","LCI","UCI")
+preds1_bsug_female$sex <- c(rep("Female",times=81))
+
+
+preds1_all_bsug_sexes <- rbind(preds1_bsug_male,
+                        preds1_bsug_female)
+
+preds1_all_bsug_sexes$river <- c(rep("Big Sugar Creek",times=162))
+
+preds1_obs_bsug_male <- filter(preds1_bsug_male,age>=2,age<=7)
+preds1_obs_bsug_male$sex <- c(rep("Male",times=26))
+
+preds1_obs_bsug_female <- filter(preds1_bsug_female,age>=2,age<=7)
+preds1_obs_bsug_female$sex <- c(rep("Female",times=26))
+
+preds1_obs_all_bsug_sexes <- rbind(preds1_obs_bsug_male,
+                        preds1_obs_bsug_female)
+
+```
+
+
+## Fit models to sexes WITHIN ELK RIVER
+```{r}
+
+#Write a funciton for optimizing the von Bert model (this is used below)
+vb_function <- vbFuns(param = "Typical")
+
+#Get starting values for von Bert optimization
+f_starts_elk_male <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_elk_male)
+f_starts_elk_female <- vbStarts(tl_alive ~ consensus_age, data = smbfit_age_elk_female)
+
+#Fit von Bert function
+fit_elk_male <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_elk_male, start = f_starts_elk_male)
+fit_elk_female <- nls(tl_alive ~ vb_function(consensus_age,Linf,K,t0), data = smbfit_age_elk_female, start = f_starts_elk_female)
+
+
+#Get coefficients from the model fit
+elk_male_coefficients <- coef(fit_elk_male)
+    #Linf = 418.42
+    #K = 0.43
+    #t0 = 0.05
+
+elk_female_coefficients <- coef(fit_elk_female)
+    #Linf = 385.99
+    #K = 0.40
+    #t0 = -0.08
+
+elk_male_bootstrap <- Boot(fit_elk_male) #998 out of 999 attempted
+elk_female_bootstrap <- Boot(fit_elk_female) #997 out of 999 attempted
+
+elk_male_confint <- confint(elk_male_bootstrap)
+elk_female_confint <- confint(elk_female_bootstrap)
+
+elk_male_pred <- predict(fit_elk_male,data.frame(consensus_age=2:7))
+elk_female_pred <- predict(fit_elk_female,data.frame(consensus_age=2:8))
+
+
+#write functions to bootstrap over individual ages
+pred_2_function_elk_male <- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:7
+pred_2_function_elk_male(fit_elk_male)
+
+pred_2_function_elk_female <- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:8
+pred_2_function_elk_female(fit_elk_female)
+
+
+ages <- seq(-1,15,by=0.2)
+elk_male_indiv_boot <- Boot(fit_elk_male, f = pred_2_function_elk_male) #996 out of 999
+
+ages <- seq(-1,15,by=0.2)
+elk_female_indiv_boot <- Boot(fit_elk_female, f = pred_2_function_elk_female) #996 out of 999
+
+
+preds1_elk_male <- data.frame(ages,
+                     predict(fit_elk_male,data.frame(consensus_age=ages)),
+                     confint(elk_male_indiv_boot))
+names(preds1_elk_male) <- c("age","fit","LCI","UCI")
+preds1_elk_male$sex <- c(rep("Male",times=81))
+
+
+preds1_elk_female <- data.frame(ages,
+                     predict(fit_elk_female,data.frame(consensus_age=ages)),
+                     confint(elk_female_indiv_boot))
+names(preds1_elk_female) <- c("age","fit","LCI","UCI")
+preds1_elk_female$sex <- c(rep("Female",times=81))
+
+
+preds1_all_elk_sexes <- rbind(preds1_elk_male,
+                        preds1_elk_female)
+
+preds1_all_elk_sexes$river <- c(rep("Elk River",times=162))
+
+preds1_obs_elk_male <- filter(preds1_elk_male,age>=2,age<=7)
+preds1_obs_elk_male$sex <- c(rep("Male",times=26))
+
+preds1_obs_elk_female <- filter(preds1_elk_female,age>=2,age<=8)
+preds1_obs_elk_female$sex <- c(rep("Female",times=31))
+
+preds1_obs_all_elk_sexes <- rbind(preds1_obs_elk_male,
+                        preds1_obs_elk_female)
 
 ```
 
 ```{r}
 
-#Here, I am removing two outlier samples in which the difference between total length alive and total length dead was greater than -10 (which means that the total length dead was greater than the total length alive, which does not go along with the rest of the data. I am assuming these are the result of recorder or measurement error on these two samples)
+preds1_all_smb_both_sexes <- rbind(preds1_all_bsug_sexes, preds1_all_elk_sexes)
+levels(smbfit_age_data_clean_actual$river) <- c("Big Sugar Creek","Elk River")
 
-smbfit_data_diff_outliers_removed <- smbfit_data[-c(64:65),]
-smbfit_counts <- smbfit_data %>%
-  group_by(hyb_status, sex) %>%
-  count()
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/growth_figures/von_bert_sex_by_river.pdf", width = 10, height = 5)
 
-smbfit_m_f_averages <- smbfit_data %>%
-  group_by(hyb_status, sex) %>%
-  summarize(mean_nor_prop = mean(prop_nor))
-
-pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/growth_figures/preliminary_growth_curve.pdf", width=6, height=5)
-
-ggplot(smbfit_data_diff_outliers_removed, aes(x = consensus_age, y = tl_alive, color = hyb_status)) +
-  geom_point(size = 3, position = position_jitter(width = 0.3)) +
-  geom_smooth() +
+ggplot() + 
+  geom_ribbon(data=preds1_all_smb_both_sexes, aes(x = age, ymin = LCI, ymax = UCI, fill = sex, alpha=0.01,), show.legend = F) +
+  geom_point(data=smbfit_age_data_clean_actual, aes(x = consensus_age,y = tl_alive, fill = sex), show.legend = T, size=3, pch=21, position = position_jitter(width = 0.3)) + 
+  geom_line(data=preds1_all_smb_both_sexes, aes(x=age, y=fit, linetype = sex)) +
   theme_set(theme_cowplot(12)) +
-  labs(x = "consensus age (years)", y = "total length alive (mm)") +
-  scale_color_manual(values = c("firebrick3","navyblue")) +
-  theme(axis.title = element_text(size = 15)) +
-  theme(axis.text = element_text(size = 15))
+  facet_wrap(~river, ncol = 2) +
+  theme(strip.background = element_rect(fill = "white")) +
+  theme(strip.text = element_text(size = 15)) +
+  theme(panel.background = element_rect(color = "black", fill = "white", size = 1, linetype = "solid")) +
+  theme(panel.margin = unit(1, "lines")) +
+  scale_fill_manual(values=c("mediumspringgreen","coral1")) +
+  scale_y_continuous(name="Total Length (mm)",limits=c(0,750),expand=c(0,0),breaks = seq(0,750,100)) +
+  scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
+  labs(fill = "Sex", linetype = "Sex") +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(legend.position = c(0.05,0.8)) +
+  theme(legend.title = element_text(face="bold",size = 15)) +
+  theme(legend.text = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 13)) +
+  scale_alpha(guide = 'none')
 
 dev.off()
-```
-
-## Growth
-```{r}
 
 
 ```
-

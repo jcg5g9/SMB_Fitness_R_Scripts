@@ -61,7 +61,8 @@ elk_dist_admix <- ggplot(smbfit_data_elk, aes(x = dist_from_hw, y = prop_nor_no_
   scale_x_continuous(expand = c(0, 0), breaks = seq(0,12000,2000)) + 
   scale_y_continuous(expand = c(0, 0)) +
   expand_limits(y = 1, x = 12500) +
-  theme(axis.title.x = element_text(margin = margin(t = 10)))
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
   
 
 bsug_dist_admix <- ggplot(smbfit_data_bsug, aes(x = dist_from_df, y = prop_nor_no_hsyc)) + 
@@ -75,7 +76,8 @@ bsug_dist_admix <- ggplot(smbfit_data_bsug, aes(x = dist_from_df, y = prop_nor_n
   scale_y_continuous(expand = c(0, 0)) +
   expand_limits(y = 1, x = 6500) +
   theme(axis.title.y = element_blank()) +
-  theme(axis.title.x = element_text(margin = margin(t = 10)))
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
 
 
 smbfit_data_gen_plot <- smbfit_data_noNA %>%
@@ -94,7 +96,8 @@ nor_admix_by_river <- ggplot(smbfit_data_gen_plot, aes(x = river, y = prop_nor_n
   theme(axis.text = element_text(size = 15)) +
   theme(axis.title.y = element_blank()) +
   expand_limits(y = 1) +
-  theme(axis.title.x = element_text(margin = margin(t = 10)))
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
 
   
 
@@ -146,7 +149,8 @@ dist_admix_indivs <- ggplot(smbfit_hyb_status_proportions, aes(x = dist, y = pro
   scale_x_continuous(expand = c(0, 0), breaks = seq(0,17500,4000)) + 
   scale_y_continuous(expand = c(0, 0)) +
   expand_limits(y = 0.6, x = 17000) +
-  theme(axis.title.x = element_text(margin = margin(t = 10)))
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
   
 dist_nor_indivs_elk <- ggplot(smbfit_hyb_status_proportions_elk, aes(x = dist_from_hw, y = prop_nor)) + 
   geom_point(size = 2.5) +
@@ -158,7 +162,8 @@ dist_nor_indivs_elk <- ggplot(smbfit_hyb_status_proportions_elk, aes(x = dist_fr
   scale_x_continuous(expand = c(0, 0), breaks = seq(0,12000,2000)) + 
   scale_y_continuous(expand = c(0, 0)) +
   expand_limits(y = 0.45, x = 12000) +
-  theme(axis.title.x = element_text(margin = margin(t = 10)))
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
 
 dist_nor_indivs_bsug <- ggplot(smbfit_hyb_status_proportions_bsug, aes(x = dist, y = prop_nor)) + 
   geom_point(size = 2.5) +
@@ -170,7 +175,8 @@ dist_nor_indivs_bsug <- ggplot(smbfit_hyb_status_proportions_bsug, aes(x = dist,
   scale_x_continuous(expand = c(0, 0), breaks = seq(0,5500,1000)) + 
   scale_y_continuous(expand = c(0, 0)) +
   expand_limits(y = 0.45, x = 5500) +
-  theme(axis.title.x = element_text(margin = margin(t = 10)))
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
 
 
 pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/admixture_geo_plots/dist_proportion_plots.pdf", width = 15, height = 5)
