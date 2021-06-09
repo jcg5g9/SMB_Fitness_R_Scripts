@@ -235,7 +235,8 @@ ggplot(smbfit_sex_per_river, aes(x = river, y = n, fill = sex)) +
   theme(axis.text = element_text(size = 25)) +
   theme(axis.text.x = element_text(hjust = 0.5)) +
   theme(axis.title = element_text(size = 25)) +
-  scale_y_continuous(expand=c(0,0)) 
+  scale_y_continuous(expand=c(0,0)) +
+  theme(axis.title.x = element_blank())
 
 dev.off()
 ```
