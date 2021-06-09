@@ -817,7 +817,7 @@ ggplot() +
   scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
   labs(fill = "Admixture Status", linetype = "Admixture Status") +
   theme(axis.title = element_text(size = 15)) + 
-  theme(legend.position = c(0.05,0.8)) +
+  theme(legend.position = c(0.03,0.7)) +
   theme(legend.title = element_text(face="bold",size = 15)) +
   theme(legend.text = element_text(size = 15)) +
   theme(axis.text = element_text(size = 13)) +
@@ -1048,7 +1048,7 @@ ggplot() +
   scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
   labs(fill = "Sex", linetype = "Sex") +
   theme(axis.title = element_text(size = 15)) + 
-  theme(legend.position = c(0.05,0.8)) +
+  theme(legend.position = c(0.03,0.7)) +
   theme(legend.title = element_text(face="bold",size = 15)) +
   theme(legend.text = element_text(size = 15)) +
   theme(axis.text = element_text(size = 13)) +
