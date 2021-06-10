@@ -11,101 +11,503 @@ library(readxl)
 library(tidyverse)
 library(cowplot)
 library(inbreedR)
-install.packages("Rhh")
+library(nlme)
+library(MuMIn)
+library(bbmle)
+library(lme4)
+library(lmerTest)
+```
+
+## Read in and organize fitness data
+```{r}
+
+smbfit_raw_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
+
+smbfit_raw_data_clean <- smbfit_raw_data %>%
+  mutate(river = factor(river),
+         tl_alive = as.numeric(tl_alive),
+         tl_alive_cm = tl_alive/10,
+         sex = factor(sex),
+         hyb_status = factor(hyb_status),
+         log_mass = log10(mass_g))
+
+smbfit_raw_data_clean <- smbfit_raw_data_clean %>%
+  mutate(condition = mass_g/(tl_alive_cm^3))
+
+smbfit_mass_tl_data <- smbfit_raw_data_clean[,-c(2:4,6:8,10:11,13:17,19:23,25:40)]
+
+smbfit_raw_data_clean_no_outlier <- smbfit_mass_tl_data[-c(13),]
+
+fitness_data <- smbfit_raw_data_clean_no_outlier %>%
+  mutate(sample_id = factor(sample_id)) %>%
+  mutate(age_factor = factor(consensus_age))
+
+fitness_data_4yo <- fitness_data %>%
+  filter(consensus_age < 5) # 105 samples total that are less than 4 yo
+
+fitness_data_4yo_bsug <- fitness_data_4yo %>%
+  filter(river == "BSUG") #40
+
+fitness_data_4yo_elk <- fitness_data_4yo %>%
+  filter(river == "ELK") #65
+```
+
+## Assess body condition as a possible proxy for fitness, including how it is correlated with age
+```{r}
+##GLOBAL
+
+#condition is calculated as mass divided by total length (cm) cubed, so it deals with both mass and length
+ 
+#How does mass scale with length
+global_mass_tl <- ggplot(fitness_data_4yo, aes(x = tl_alive, y = mass_g)) +
+  geom_point(size = 2.5) +
+  geom_smooth(method = "lm", se = F, color = "black") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Total Length (mm)", y = "Mass (g)") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0,400,50)) + 
+  scale_y_continuous(expand = c(0, 0)) +
+  expand_limits(y = 700, x = 400) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(axis.title.x = element_blank())
+  
+mass_by_tl_corr <- lm(mass_g ~ tl_alive, fitness_data_4yo)
+summary(mass_by_tl_corr) #r2 = 0.937, p <0.001
+
+#Is condition correlated with age?
+global_age_condition <- ggplot(fitness_data_4yo, aes(x = consensus_age, y = condition)) +
+  geom_point(size = 2.5, alpha = 0.5, position = position_jitter(width = 0.1)) +
+  geom_smooth(method = "lm", se = F, color = "black") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Age (years)", y = "Condition (g/cm3)") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0,4,1)) + 
+  scale_y_continuous(expand = c(0, 0)) +
+  expand_limits(y = 0.01, x = 4) +
+  ylab(expression(Condition~(g/cm^{"3"}))) + 
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(axis.title.x = element_blank())
+
+condition_by_age_corr <- lm(condition ~ consensus_age, fitness_data_4yo)
+summary(condition_by_age_corr) #r2 = 0.009, p = 0.346
+
+#Is condition normally distributed?
+global_condition_norm <- ggplot(fitness_data_4yo, aes(condition)) +
+  geom_histogram(fill = "grey", color = "black") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Condition (g/cm3)", y = "Frequency") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(axis.title.x = element_blank())
+
+shapiro.test(fitness_data_4yo$condition)
+#p = 0.4304, W = 0.969
+
+
+##BIG SUGAR CREEK
+
+#condition is calculated as mass divided by total length (cm) cubed, so it deals with both mass and length
+ 
+#How does mass scale with length
+bsug_mass_tl <- ggplot(fitness_data_4yo_bsug, aes(x = tl_alive, y = mass_g)) +
+  geom_point(size = 2.5) +
+  geom_smooth(method = "lm", se = F, color = "black") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Total Length (mm)", y = "Mass (g)") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0,350,50)) + 
+  scale_y_continuous(expand = c(0, 0)) +
+  expand_limits(y = 600, x = 350) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(axis.title.x = element_blank())
+  
+mass_by_tl_corr_bsug <- lm(mass_g ~ tl_alive, fitness_data_4yo_bsug)
+summary(mass_by_tl_corr_bsug) #r2 = 0.94, p <0.001
+
+#Is condition correlated with age?
+bsug_age_condition <- ggplot(fitness_data_4yo_bsug, aes(x = consensus_age, y = condition)) +
+  geom_point(size = 2.5, alpha = 0.5, position = position_jitter(width = 0.1)) +
+  geom_smooth(method = "lm", se = F, color = "black") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Age (years)", y = "Condition (g/cm3)") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0,4,1)) + 
+  scale_y_continuous(expand = c(0, 0)) +
+  expand_limits(y = 0.01, x = 4) +
+  ylab(expression(Condition~(g/cm^{"3"}))) + 
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(axis.title.x = element_blank())
+
+condition_by_age_corr_bsug <- lm(condition ~ consensus_age, fitness_data_4yo_bsug)
+summary(condition_by_age_corr_bsug) #r2 = 0.05, p = 0.147
+
+#Is condition normally distributed?
+bsug_condition_norm <- ggplot(fitness_data_4yo_bsug, aes(condition)) +
+  geom_histogram(fill = "grey", color = "black") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Condition (g/cm3)", y = "Frequency") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(axis.title.x = element_blank())
+
+condition_norm_bsug <- shapiro.test(fitness_data_4yo_bsug$condition)
+#p = 0.117, W = 0.955
+
+
+##ELK RIVER
+
+#condition is calculated as mass divided by total length (cm) cubed, so it deals with both mass and length
+ 
+#How does mass scale with length
+elk_mass_tl <- ggplot(fitness_data_4yo_elk, aes(x = tl_alive, y = mass_g)) +
+  geom_point(size = 2.5) +
+  geom_smooth(method = "lm", se = F, color = "black") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Total Length (mm)", y = "Mass (g)") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0,350,50)) + 
+  scale_y_continuous(expand = c(0, 0)) +
+  expand_limits(y = 600, x = 350) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+  
+mass_by_tl_corr_elk <- lm(mass_g ~ tl_alive, fitness_data_4yo_elk)
+summary(mass_by_tl_corr_elk) #r2 = 0.94, p <0.001
+
+#Is condition correlated with age?
+elk_age_condition <- ggplot(fitness_data_4yo_elk, aes(x = consensus_age, y = condition)) +
+  geom_point(size = 2.5, alpha = 0.5, position = position_jitter(width = 0.1)) +
+  geom_smooth(method = "lm", se = F, color = "black") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Age (years)", y = "Condition (g/cm3)") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0,4,1)) + 
+  scale_y_continuous(expand = c(0, 0)) +
+  expand_limits(y = 0.01, x = 4) +
+  ylab(expression(Condition~g/cm^{"3"})) + 
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+
+condition_by_age_corr_elk <- lm(condition ~ consensus_age, fitness_data_4yo_elk)
+summary(condition_by_age_corr_elk) #r2 = 0.001, p = 0.781
+
+#Is condition normally distributed?
+elk_condition_norm <- ggplot(fitness_data_4yo_elk, aes(condition)) +
+  geom_histogram(fill = "grey", color = "black") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Condition (g/cm^3)", y = "Frequency") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  xlab(expression(Condition~(g/cm^{"3"}))) + 
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+
+condition_norm_elk <- shapiro.test(fitness_data_4yo_elk$condition)
+#p = 0.181, W = 0.973
+
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/hfc_plots/condition_check_plots.pdf", width = 13, height = 10)
+
+plot_grid(global_mass_tl, 
+         global_age_condition, 
+         global_condition_norm,
+         bsug_mass_tl, 
+         bsug_age_condition, 
+         bsug_condition_norm,
+         elk_mass_tl, 
+         elk_age_condition, 
+         elk_condition_norm,
+         nrow = 3,
+         labels = c("a","b","c","d","e","f","g","h","i"),
+         label_size = 25,
+         label_y = 1.04)
+
+dev.off()
+```
+
+##Read in genetic data, and convert to inbreedR format for the global dataset, the big sugar dataset, and the elk river dataset
+```{r}
+# Read in genetic data with inbreed R
+gen_data <- read_csv("../../raw_data/genotype_data/genotype_files/smbfit_msat_genotypes_noHSYC.csv")
+
+gen_data_all_with_fitness <- merge(fitness_data_4yo, gen_data, by = "sample_id")
+
+gen_data_all <- gen_data_all_with_fitness[,-c(2:11)]
+gen_data_all <- column_to_rownames(gen_data_all, "sample_id")
+
+gen_data_inbreedr <- convert_raw(gen_data_all)
+check_data(gen_data_inbreedr)
+
+gen_data_bsug_with_fitness <- gen_data_all_with_fitness %>%
+  filter(river == "BSUG")
+
+gen_data_elk_with_fitness <- gen_data_all_with_fitness %>%
+  filter(river == "ELK")
+
+gen_data_bsug_with_fitness <- column_to_rownames(gen_data_bsug_with_fitness, "sample_id")
+gen_data_elk_with_fitness <- column_to_rownames(gen_data_elk_with_fitness, "sample_id")
+
+gen_data_bsug <- gen_data_bsug_with_fitness[,-c(1:10)]
+gen_data_elk <- gen_data_elk_with_fitness[,-c(1:10)]
+
+gen_data_bsug_inbreedr <- convert_raw(gen_data_bsug)
+check_data(gen_data_bsug_inbreedr)
+
+gen_data_elk_inbreedr <- convert_raw(gen_data_elk)
+check_data(gen_data_elk_inbreedr)
+```
+
+## Calcualte g2 coefficients for each dataset (g2 measures identity disequilibrium, which is a measure of how correlated heterozygosity is and tells you whether you have high power of detecting general effects of inbreeding across the genome (if high correlation among loci, then we assume that the rest of the genome is probably mostly heterozygous))
+```{r}
+g2_global <- g2_microsats(gen_data_inbreedr, nperm = 1000, nboot = 1000, CI = 0.95)
+#p = 0.04, se = 0.006, 2.5% ci = -0.001, 97.5% ci = 0.233, g2 = 0.010
+
+g2_bsug <- g2_microsats(gen_data_bsug_inbreedr, nperm = 1000, nboot = 1000, CI = 0.95)
+#p = 0.377, se = 0.009, 2.5% ci = -0.014, 97.5% ci = 0.024, g2 = 0.002
+
+g2_elk <- g2_microsats(gen_data_elk_inbreedr, nperm = 1000, nboot = 1000, CI = 0.95)
+#p = 0.025, se = 0.008, 2.5% ci = 0.0005, 97.5% ci = 0.030, g2 = 0.015
+```
+
+## Get heterozygosity measures per individual in each dataset
+```{r}
+
+het_global <- as.data.frame(sMLH(gen_data_inbreedr))
+het_global <- rownames_to_column(het_global, "sample_id")
+het_global <- het_global %>%
+  mutate(sample_id = factor(sample_id))
+colnames(het_global) <- c("sample_id","het")
+
+het_bsug <- as.data.frame(sMLH(gen_data_bsug_inbreedr))
+het_bsug <- rownames_to_column(het_bsug, "sample_id")
+het_bsug <- het_bsug %>%
+  mutate(sample_id = factor(sample_id))
+colnames(het_bsug) <- c("sample_id","het")
+
+het_elk <- as.data.frame(sMLH(gen_data_elk_inbreedr))
+het_elk <- rownames_to_column(het_elk, "sample_id")
+het_elk <- het_elk %>%
+  mutate(sample_id = factor(sample_id))
+colnames(het_elk) <- c("sample_id","het")
+ 
+global_het_fitness <- merge(het_global, fitness_data_4yo, by = "sample_id")
+bsug_het_fitness <- merge(het_bsug, fitness_data_4yo_bsug, by = "sample_id")
+elk_het_fitness <- merge(het_elk, fitness_data_4yo_elk, by = "sample_id")
+
+#plot condition by heterozygosity
+global_het_fitness_plot <- ggplot(global_het_fitness, aes(x = het,y = condition)) + 
+  geom_point(size = 2.5) +
+  geom_smooth(method = "lm", se = F, color = "black") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Multilocus heterozygosity", y = "Body condition (g/cm3)") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0,1.5,0.1)) + 
+  scale_y_continuous(expand = c(0, 0)) +
+  expand_limits(y = 0.01, x = 1.4) +
+  ylab(expression(Condition~(g/cm^{"3"}))) + 
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+
+global_het_fitness <- global_het_fitness[-c(105),]
+
+global_het_fitness_lme <- lme(condition ~ het, random = ~1|sex, global_het_fitness)
+anova.lme(global_het_fitness_lme)
+r.squaredGLMM(global_het_fitness_lme)
+#p = 0.032, F = 4.75
+
+
+bsug_het_fitness_plot <- ggplot(bsug_het_fitness, aes(x = het, y = condition)) + 
+  geom_point(size = 2.5) +
+  geom_smooth(method = "lm", se = F, color = "black") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Multilocus heterozygosity", y = "Body condition (g/cm3)") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0,1.5,0.1)) + 
+  scale_y_continuous(expand = c(0, 0)) +
+  expand_limits(y = 0.01, x = 1.4) +
+  ylab(expression(Condition~(g/cm^{"3"}))) + 
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(axis.title.y = element_blank())
+
+bsug_het_fitness_lme <- lme(condition ~ het, random = ~1|sex, bsug_het_fitness)
+anova.lme(bsug_het_fitness_lme)
+r.squaredGLMM(bsug_het_fitness_lme)
+#p = 0.206, F = 1.65
+
+
+elk_het_fitness_plot <- ggplot(elk_het_fitness, aes(x = het, y = condition)) + 
+  geom_point(size = 2.5) +
+  geom_smooth(method = "lm", se = F, color = "black") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Multilocus heterozygosity", y = "Body condition (g/cm3)") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0,1.5,0.1)) + 
+  scale_y_continuous(expand = c(0, 0)) +
+  expand_limits(y = 0.01, x = 1.4) +
+  ylab(expression(Condition~(g/cm^{"3"}))) + 
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(axis.title.y = element_blank())
+ 
+elk_het_fitness <- elk_het_fitness[-c(65),]
+
+elk_het_fitness_lme <- lme(condition ~ het, random = ~1|sex, elk_het_fitness)
+anova.lme(elk_het_fitness_lme)
+r.squaredGLMM(elk_het_fitness_lme)
+#p = 0.07, F = 3.45
+
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/hfc_plots/hfc_plots.pdf", width = 15, height = 5)
+
+plot_grid(global_het_fitness_plot,
+          bsug_het_fitness_plot,
+          elk_het_fitness_plot,
+          nrow = 1)
+
+dev.off()
+
+
 ```
 
 
-
-
-
-## Read in all non-genetic data (including morphometrics, sex, otolith consensus age, etc.)
+## Keep all ages in teh data
 ```{r}
-smbfit_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
 
-smbfit_data <- smbfit_data %>%
-  mutate(tl_alive = as.numeric(tl_alive))
+# Read in genetic data with inbreed R
 
-#Change all character variables to factors
-smbfit_data[sapply(smbfit_data, is.character)] <- lapply(smbfit_data[sapply(smbfit_data, is.character)], as.factor)
+all_ages_with_fitness <- merge(fitness_data, gen_data, by = "sample_id")
 
-##Get rid of any rows with NA
-smbfit_noNA <- smbfit_data %>%
-  drop_na()
+gen_data_all_ages <- all_ages_with_fitness[,-c(2:11)]
+gen_data_all_ages <- column_to_rownames(gen_data_all_ages, "sample_id")
+
+gen_data_inbreedr_all_ages <- convert_raw(gen_data_all_ages)
+check_data(gen_data_inbreedr_all_ages)
+
+gen_data_bsug_all_ages <- all_ages_with_fitness %>%
+  filter(river == "BSUG")
+
+gen_data_elk_all_ages <- all_ages_with_fitness %>%
+  filter(river == "ELK")
+
+gen_data_bsug_all_ages <- column_to_rownames(gen_data_bsug_all_ages, "sample_id")
+gen_data_elk_all_ages <- column_to_rownames(gen_data_elk_all_ages, "sample_id")
+
+gen_data_bsug_all_ages <- gen_data_bsug_all_ages[,-c(1:10)]
+gen_data_elk_all_ages <- gen_data_elk_all_ages [,-c(1:10)]
+
+gen_data_bsug_inbreedr_all_ages <- convert_raw(gen_data_bsug_all_ages)
+check_data(gen_data_bsug_inbreedr_all_ages)
+
+gen_data_elk_inbreedr_all_ages <- convert_raw(gen_data_elk_all_ages)
+check_data(gen_data_elk_inbreedr_all_ages)
 
 ```
 
-## Read in genotype data (from genotype file, with microsatellite loci in columns and samples in rows, each entry is a diploid genotype)
+## Calcualte g2 coefficients for each dataset (g2 measures identity disequilibrium, which is a measure of how correlated heterozygosity is and tells you whether you have high power of detecting general effects of inbreeding across the genome (if high correlation among loci, then we assume that the rest of the genome is probably mostly heterozygous))
 ```{r}
-smbfit_msat_data <- read_population("../../raw_data/genotype_data/genotype_files/smbfit_msat_genotypes.csv", type = "column", locus.columns = 2:29)
+g2_global_all_ages <- g2_microsats(gen_data_inbreedr_all_ages, nperm = 1000, nboot = 1000, CI = 0.95)
+#p = 0.026, se = 0.006, 2.5% ci = 2.893e-05, 97.5% ci = 2.297e-02, g2 = 0.011
 
-#Data Cleaning:
+g2_bsug_all_ages <- g2_microsats(gen_data_bsug_inbreedr_all_ages, nperm = 1000, nboot = 1000, CI = 0.95)
+#p = 0.291, se = 0.009, 2.5% ci = -0.012, 97.5% ci = 0.026, g2 = 0.005
 
-#Change categorical variables to factors
-smbfit_msat_data$sample_id <- as.factor(smbfit_msat_data$sample_id)
+g2_elk_all_ages <- g2_microsats(gen_data_elk_inbreedr_all_ages, nperm = 1000, nboot = 1000, CI = 0.95)
+#p = 0.021, se = 0.007, 2.5% ci = 0.001, 97.5% ci = 0.030, g2 = 0.015
 ```
 
-## Calculate observed heterozygosity for each individual across all loci (proportion of loci that have heterozygous genotype)
+## Get heterozygosity measures per individual in each dataset
 ```{r}
-#calculate observed heterozygosity per locus (give the sample a "1" if heterozygous, "0" if homozygous)
-Ho_per_loc <- genetic_diversity(smbfit_msat_data, 
-                                stratum = "sample_id", 
-                                mode = c("Ho")) 
 
-#Figure out how many loci are represented (have a genotype call) for each individual sample
+het_global_all_ages <- as.data.frame(sMLH(gen_data_inbreedr_all_ages))
+het_global_all_ages <- rownames_to_column(het_global_all_ages, "sample_id")
+het_global_all_ages <- het_global_all_ages %>%
+  mutate(sample_id = factor(sample_id))
+colnames(het_global_all_ages) <- c("sample_id","het")
 
-#Count the number of NAs per individual, because we cannot include in the total number of markers those that did not have a genotype call
-    Ho_count_NA <- Ho_per_loc %>%
-      mutate(Stratum = factor(Stratum)) %>%
-      group_by(Stratum) %>%
-      summarize(sum_na = sum(is.na(Ho)))
+het_bsug_all_ages <- as.data.frame(sMLH(gen_data_bsug_inbreedr_all_ages))
+het_bsug_all_ages <- rownames_to_column(het_bsug_all_ages, "sample_id")
+het_bsug_all_ages <- het_bsug_all_ages %>%
+  mutate(sample_id = factor(sample_id))
+colnames(het_bsug_all_ages) <- c("sample_id","het")
 
-#Subtract total number of NAs per individual from 14 (which is the total number of starting loci)
-    Ho_count_NA$sum_loc <- with(Ho_count_NA, 14 - sum_na)
-    
-    
-#Update the heterozygosity per locus dataset to omit NAs
-Ho_per_loc_noNA <- Ho_per_loc %>%
-  as.data.frame() %>%
-  mutate(Stratum = factor(Stratum), Locus = factor(Locus)) %>%
-  drop_na()
+het_elk_all_ages <- as.data.frame(sMLH(gen_data_elk_inbreedr_all_ages))
+het_elk_all_ages <- rownames_to_column(het_elk_all_ages, "sample_id")
+het_elk_all_ages <- het_elk_all_ages %>%
+  mutate(sample_id = factor(sample_id))
+colnames(het_elk_all_ages) <- c("sample_id","het")
+ 
+global_het_fitness_all_ages <- merge(het_global_all_ages, fitness_data, by = "sample_id")
+bsug_het_fitness_all_ages <- merge(het_bsug_all_ages, fitness_data, by = "sample_id")
+elk_het_fitness_all_ages <- merge(het_elk_all_ages, fitness_data, by = "sample_id")
 
-#Calculate total number of heterozygous loci per individual
-Ho_per_ind <- Ho_per_loc_noNA %>%
-  group_by(Stratum) %>%
-  summarize(tot_ho = sum(Ho)) 
+#plot condition by heterozygosity
+global_het_fitness_all_ages_plot <- ggplot(global_het_fitness_all_ages, aes(x = het,y = condition)) + 
+  geom_point(size = 2.5) +
+  geom_smooth(method = "lm", se = T, color = "black") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Heterozygosity", y = "Body condition (g/cm3)") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0,1.5,0.1)) + 
+  scale_y_continuous(expand = c(0, 0)) +
+  expand_limits(y = 0.01, x = 1.4) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
 
-#Add per-individual heterozygosity to sum of loci dataset
-Ho_per_ind <- Ho_per_ind %>%
-  left_join(Ho_count_NA, by = "Stratum")
+ global_het_fitness_all_ages <- global_het_fitness_all_ages[-c(115),]
 
-
-#Calculate per-individual Heterozygosity
-Ho_per_ind$Ho <- with(Ho_per_ind, tot_ho/sum_loc)
-
-colnames(Ho_per_ind)[1] <- "sample_id"
-
-
-#join heterozygosity data with all non-genetic data
-smbfit_data_het <- smbfit_data %>%
-  left_join(Ho_per_ind, by = "sample_id")
-
-
+global_het_fitness_all_ages_lme <- lme(condition ~ het, random = ~1|sex,  global_het_fitness_all_ages)
+anova.lme(global_het_fitness_all_ages_lme)
+#p = 0.032, F = 4.72
 
 
-smbfit_data_het$log10_wt <- with(smbfit_data_het, 3.2*log10(tl_alive) - 5.329)
-smbfit_data_het$stand_wt <- with(smbfit_data_het, 10^log10_wt)
-smbfit_data_het$tl_by_sl <- with(smbfit_data_het, tl_alive/sl)
-smbfit_data_het$condition <- with(smbfit_data_het, mass_g/stand_wt)
+bsug_het_fitness_all_ages_plot <- ggplot(bsug_het_fitness_all_ages, aes(x = het, y = condition)) + 
+  geom_point(size = 2.5) +
+  geom_smooth(method = "lm", se = T, color = "black") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Heterozygosity", y = "Body condition (g/cm3)") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0,1.5,0.1)) + 
+  scale_y_continuous(expand = c(0, 0)) +
+  expand_limits(y = 0.01, x = 1.4) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
 
-smbfit_data_het_age2 <- smbfit_data_het %>%
-  filter(consensus_age == "2")
+bsug_het_fitness_all_ages_lme <- lme(condition ~ het, random = ~1|sex, bsug_het_fitness_all_ages)
+anova.lme(bsug_het_fitness_all_ages_lme)
+#p = 0.33, F = 0.956
 
-ggplot(smbfit_data_het, aes(x = prop_nor, y = condition)) + 
-  geom_point() +
-  geom_smooth(method = "lm")
 
-ggplot(smbfit_data_het, aes(x = hyb_status, y = )) + 
-  geom_boxplot()
+elk_het_fitness_all_ages_plot <- ggplot(elk_het_fitness_all_ages, aes(x = het, y = condition)) + 
+  geom_point(size = 2.5) +
+  geom_smooth(method = "lm", se = T, color = "black") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Heterozygosity", y = "Body condition (g/cm3)") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0,1.5,0.1)) + 
+  scale_y_continuous(expand = c(0, 0)) +
+  expand_limits(y = 0.01, x = 1.4) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
 
-summary(lm(condition ~ Ho, smbfit_data_het))
+elk_het_fitness_all_ages <- elk_het_fitness_all_ages[-c(70),]
+
+elk_het_fitness_all_ages_lme <- lme(condition ~ het, random = ~1|sex, elk_het_fitness_all_ages)
+anova.lme(elk_het_fitness_all_ages_lme)
+#p = 0.050, F = 3.98
 ```
