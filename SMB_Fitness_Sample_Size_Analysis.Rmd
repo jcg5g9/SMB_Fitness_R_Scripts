@@ -30,6 +30,14 @@ smbfit_data_size_dist <- smbfit_data_size_dist %>%
 #Drop the one NA in the dataset where I don't have total length for the fish
 smbfit_data_size_dist <- smbfit_data_size_dist %>%
   drop_na()
+
+smbfit_all_sex_by_river_for_ms <- smbfit_data_size_dist %>%
+  group_by(river, sex) %>%
+  count()
+
+smbfit_all_admix_by_river_for_ms <- smbfit_data_size_dist %>%
+  group_by(river, hyb_status) %>%
+  count()
 ```
 
 
