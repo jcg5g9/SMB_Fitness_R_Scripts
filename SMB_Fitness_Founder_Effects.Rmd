@@ -1,0 +1,64 @@
+---
+title: "SMB_Fitness_Founder_Effects"
+author: "Joe Gunn"
+date: "6/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(readxl)
+library(tidyverse)
+library(cowplot)
+library(inbreedR)
+library(nlme)
+library(MuMIn)
+library(bbmle)
+library(lme4)
+library(lmerTest)
+library(gstudio)
+```
+
+## Read in genetic data and clean data.
+```{r}
+gen_data_northern <- read_population("../../raw_data/genotype_data/genotype_files/smbfit_msat_genotypes_northern_only.csv", type = "column", locus.columns = 4:31)
+
+#Data Cleaning:
+#Change categorical variables to factors
+gen_data_northern$range <- as.factor(gen_data_northern$range)
+gen_data_northern$sample_id <- as.factor(gen_data_northern$sample_id)
+```
+
+```{r}
+#HGenetic metrics by locus
+A_95_bypop <- genetic_diversity(gen_data_northern, mode = "A95", stratum = "range") # non-rare allele frequency by individual
+Ho_bylocus <- genetic_diversity(gen_data_northern, mode = "Ho", stratum = "range") 
+He_bylocus <- genetic_diversity(gen_data_northern,  mode = "He", stratum = "range")
+A_bylocus <- genetic_diversity(gen_data_northern, mode = "A", stratum = "range") 
+Ae_bylocus <- genetic_diversity(gen_data_northern, mode = "Ae", stratum = "range")
+Fis_bylocus <- genetic_diversity(gen_data_northern, mode = "Fis", stratum = "range")
+
+
+Ho_pop_ave <- Ho_pop %>% 
+  group_by(Stratum) %>% 
+  summarize(mean_Ho = mean(Ho)) # calculate average observed heterozygosity for populations
+
+He_pop_ave <- He_pop %>% 
+  group_by(Stratum) %>% 
+  summarize(mean_He = mean(He)) # calculate average expected heterozy
+
+A_bypop <- A_bylocus %>%
+  group_by(Stratum) %>% 
+  summarize (mean_A = mean(A)) # average non-rare allele frequency by population
+
+Ae_bypop <- Ae_bylocus %>% 
+  group_by(Stratum) %>% 
+  summarize (mean_Ae = mean(Ae)) # average non-rare allele frequency by population
+
+A_95_bypop <- A_95_bypop %>% 
+  group_by(Stratum) %>% 
+  summarize (mean_A95 = mean(A95)) # average non-rare allele frequency by population
+
+Fis_bypop <- Fis_bylocus %>% 
+  group_by(Stratum) %>% 
+  summarize (mean_Fis = mean(Fis)) # average non-rare allele frequency by population
+```
