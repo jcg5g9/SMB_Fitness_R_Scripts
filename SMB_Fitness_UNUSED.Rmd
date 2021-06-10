@@ -1,0 +1,267 @@
+---
+title: "SMB_Fitness_UNUSED"
+author: "Joe Gunn"
+date: "6/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Read in phenotype (fitness) data for total length at 2 years old
+smbfit_tl_2_data <- read_excel("../../raw_data/fitness_data/smbfit_tl_2_fit_data.xlsx")
+
+smbfit_tl_2_data <- smbfit_tl_2_data %>%
+  mutate(sample_id = factor(sample_id),
+         estimate = factor(estimate))
+
+#Omit Back-calculated samples and only keep real
+smbfit_tl_2_data_real <- smbfit_tl_2_data %>% 
+  filter(estimate == "real")
+
+#Start cleaning up the datasets
+smbfit_tl_2_data_all <- smbfit_tl_2_data[,-c(3:4)]
+smbfit_tl_2_data_real <- smbfit_tl_2_data_real[,-c(3:4)]
+
+#Make sure that the samples with fitness data line up with the genotype data.
+smbfit_gen_and_fitness_samples_all <- merge(smbfit_two_column, smbfit_tl_2_data_all, by = "sample_id")
+smbfit_gen_and_fitness_samples_real <- merge(smbfit_two_column, smbfit_tl_2_data_real, by = "sample_id")
+
+#clean up the genotype data file
+smbfit_gen_data_all <- smbfit_gen_and_fitness_samples_all[,-c(30:32)]
+smbfit_gen_data_all <- column_to_rownames(smbfit_gen_data_all, "sample_id")
+
+smbfit_gen_data_real <- smbfit_gen_and_fitness_samples_real[,-c(30:32)]
+smbfit_gen_data_real <- column_to_rownames(smbfit_gen_data_real, "sample_id")
+
+#Convert genotype format to inbreedR working format
+smbfit_genotypes_inbreed_all <- convert_raw(smbfit_gen_data_all)
+smbfit_genotypes_inbreed_real <- convert_raw(smbfit_gen_data_real)
+
+#Check to make sure inbreedR format is correct 
+check_data(smbfit_genotypes_inbreed_all, num_ind = 81, num_loci = 14) #TRUE - All good!
+check_data(smbfit_genotypes_inbreed_real, num_ind = 53, num_loci = 14) #TRUE - All good!
+```
+
+## Calculate g2 (two-locus heterozygosity disequlibrium) an expected correlation of heterozygosity and inbreeding level
+```{r}
+g2_smbfit_all <- g2_microsats(smbfit_genotypes_inbreed_all, nperm = 1000, nboot = 1000, CI = 0.95) # 0.151
+g2_smbfit_real <- g2_microsats(smbfit_genotypes_inbreed_real, nperm = 1000, nboot = 1000, CI = 0.95) # 0.238
+
+#g2 (identity disequilibrium) is not significant, meaning that there is not great power for detecting a heterozygosity correlation with these data.
+
+
+plot(g2_smbfit_all, main = "Microsatellites",
+     col = "cornflowerblue", cex.axis=0.85)
+
+plot(g2_smbfit_real, main = "Microsatellites",
+     col = "cornflowerblue", cex.axis=0.85)
+
+# r^2 between inbreeding and heterozygosity
+hf_all <- r2_hf(genotypes = smbfit_genotypes_inbreed_all, nboot = 1000, type = "msats")
+plot(hf_all)
+
+hf_real <- r2_hf(genotypes = smbfit_genotypes_inbreed_real, nboot = 1000, type = "msats")
+plot(hf_real)
+```
+
+## Calculate per-individual heterozygosity and run linear models to test for HFCs for all samples (including back-calculated) and only real samples based on Total length (mm)
+```{r}
+#heterozygosity per individual
+het_all <- sMLH(smbfit_genotypes_inbreed_all)
+het_real <- sMLH(smbfit_genotypes_inbreed_real)
+
+#variance in heterozygosity
+het_all_var <- var(het_all) #0.039
+het_all_real <- var(het_real) #0.040
+
+het_data_all <- as.data.frame(het_all)
+het_data_all <- rownames_to_column(het_data_all, "sample_id")
+
+het_data_real <- as.data.frame(het_real)
+het_data_real <- rownames_to_column(het_data_real, "sample_id")
+
+het_data_all <- het_data_all %>%
+  mutate(sample_id = factor(sample_id))
+
+het_data_real <- het_data_real %>%
+  mutate(sample_id = factor(sample_id))
+
+het_fit_all <- merge(het_data_all, smbfit_tl_2_data_all,by = "sample_id")
+het_fit_real <- merge(het_data_real, smbfit_tl_2_data_real,by = "sample_id")
+
+#Run linear models to test for HFCs
+hfc_all <- lm(tl_alive ~ het_all, het_fit_all)
+summary(hfc_all) #p = 0.76, r2 = 0.001
+
+hfc_real <- lm(tl_alive ~ het_real, het_fit_real)
+summary(hfc_real) #p = 0.82, r2 = 0.001
+
+```
+
+## Plot HFCs for all data (including back-calculations) and for real data only on Total Length (mm)
+```{r}
+HFC_tl_all_samples <- ggplot(het_fit_all, aes(het_all, tl_alive)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+
+HFC_tl_real_samples <- ggplot(het_fit_real, aes(het_real, tl_alive)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+
+```
+
+## Assess body condition as a fitness variable
+```{r}
+#Only condition on 2 year old samples####
+
+smbfit_tl_2_data_real
+
+smbfit_mass_data_real <- read_excel("../../raw_data/fitness_data/smbfit_mass.xlsx")
+
+smbfit_tl_mass_real <- merge(smbfit_tl_2_data_real, smbfit_mass_data_real, by = "sample_id")
+
+smbfit_tl_mass_real <- smbfit_tl_mass_real %>%
+  mutate(tl_mass_cm = tl_alive/10)
+
+smbfit_tl_mass_real <- smbfit_tl_mass_real %>%
+  mutate(condition = mass_g/(tl_mass_cm^3))
+
+
+het_fit_real_with_condition <- merge(het_data_real, smbfit_tl_mass_real,by = "sample_id")
+
+#Run linear models to test for HFCs
+hfc_all_with_condition <- lm(condition ~ het_real, het_fit_real_with_condition)
+summary(hfc_all_with_condition) #p = 0.346, r2 = 0.02
+
+HFC_condition_real_samples <- ggplot(hfc_all_with_condition, aes(het_real, condition)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+
+
+#Condition for ALL samples##
+smbfit_raw_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
+
+smbfit_raw_data_clean <- smbfit_raw_data %>%
+  mutate(river = factor(river),
+         tl_alive = as.numeric(tl_alive),
+         sex = factor(sex),
+         hyb_status = factor(hyb_status),
+         log_mass = log10(mass_g),
+         condition = log_mass/(tl_alive^3))
+
+smbfit_mass_tl_data <- smbfit_raw_data_clean[,-c(2:8,10:11,13:17,19:40)]
+
+smbfit_raw_data_clean_no_outlier <- smbfit_mass_tl_data[-c(13),]
+
+smbfit_raw_data_clean_no_outlier <- smbfit_raw_data_clean_no_outlier %>%
+  mutate(sample_id = factor(sample_id))
+
+
+smbfit_gen_condition_data <- merge(smbfit_two_column,smbfit_raw_data_clean_no_outlier, by = "sample_id")
+
+smbfit_gen_for_condition <- smbfit_gen_condition_data[,-c(30:34)]
+smbfit_fit_for_condition <- smbfit_gen_condition_data[,-c(2:29)]
+
+smbfit_gen_for_condition <- column_to_rownames(smbfit_gen_for_condition, "sample_id")
+
+smbfit_genotypes_inbreed_all_condition <- convert_raw(smbfit_gen_for_condition)
+check_data(smbfit_genotypes_inbreed_all_condition, num_ind = 115, num_loci = 14)
+
+#heterozygosity per individual
+het_all_condition <- sMLH(smbfit_genotypes_inbreed_all_condition)
+
+#variance in heterozygosity
+het_all_condition_var<- var(het_all_condition) #0.04
+
+het_all_condition <- as.data.frame(het_all_condition)
+het_all_condition <- rownames_to_column(het_all_condition, "sample_id")
+
+het_all_condition <- het_all_condition %>%
+  mutate(sample_id = factor(sample_id))
+
+het_fit_all_condition <- cbind(het_all_condition, smbfit_fit_for_condition)
+het_fit_all_condition <- het_fit_all_condition[,-c(3)]
+
+het_fit_all_condition <- het_fit_all_condition %>%
+  mutate(reg_condition = mass_g/(tl_alive^3))
+
+
+ggplot(het_fit_all_condition, aes(x = het_all_condition, y= reg_condition)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+
+condition_by_het <- lm(reg_condition ~ het_all_condition, het_fit_all_condition)
+summary(condition_by_het)
+```
+
+```{r}
+
+
+## Calculate observed heterozygosity for each individual across all loci (proportion of loci that have heterozygous genotype)
+```{r}
+#calculate observed heterozygosity per locus (give the sample a "1" if heterozygous, "0" if homozygous)
+Ho_per_loc <- genetic_diversity(smbfit_msat_data, 
+                                stratum = "sample_id", 
+                                mode = c("Ho")) 
+
+#Figure out how many loci are represented (have a genotype call) for each individual sample
+
+#Count the number of NAs per individual, because we cannot include in the total number of markers those that did not have a genotype call
+    Ho_count_NA <- Ho_per_loc %>%
+      mutate(Stratum = factor(Stratum)) %>%
+      group_by(Stratum) %>%
+      summarize(sum_na = sum(is.na(Ho)))
+
+#Subtract total number of NAs per individual from 14 (which is the total number of starting loci)
+    Ho_count_NA$sum_loc <- with(Ho_count_NA, 14 - sum_na)
+    
+    
+#Update the heterozygosity per locus dataset to omit NAs
+Ho_per_loc_noNA <- Ho_per_loc %>%
+  as.data.frame() %>%
+  mutate(Stratum = factor(Stratum), Locus = factor(Locus)) %>%
+  drop_na()
+
+#Calculate total number of heterozygous loci per individual
+Ho_per_ind <- Ho_per_loc_noNA %>%
+  group_by(Stratum) %>%
+  summarize(tot_ho = sum(Ho)) 
+
+#Add per-individual heterozygosity to sum of loci dataset
+Ho_per_ind <- Ho_per_ind %>%
+  left_join(Ho_count_NA, by = "Stratum")
+
+
+#Calculate per-individual Heterozygosity
+Ho_per_ind$Ho <- with(Ho_per_ind, tot_ho/sum_loc)
+
+colnames(Ho_per_ind)[1] <- "sample_id"
+
+
+#join heterozygosity data with all non-genetic data
+smbfit_data_het <- smbfit_data %>%
+  left_join(Ho_per_ind, by = "sample_id")
+
+
+
+
+smbfit_data_het$log10_wt <- with(smbfit_data_het, 3.2*log10(tl_alive) - 5.329)
+smbfit_data_het$stand_wt <- with(smbfit_data_het, 10^log10_wt)
+smbfit_data_het$tl_by_sl <- with(smbfit_data_het, tl_alive/sl)
+smbfit_data_het$condition <- with(smbfit_data_het, mass_g/stand_wt)
+
+smbfit_data_het_age2 <- smbfit_data_het %>%
+  filter(consensus_age == "2")
+
+ggplot(smbfit_data_het, aes(x = prop_nor, y = condition)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+
+ggplot(smbfit_data_het, aes(x = hyb_status, y = )) + 
+  geom_boxplot()
+
+summary(lm(condition ~ Ho, smbfit_data_het))
+```
+
