@@ -16,6 +16,8 @@ library(MuMIn)
 library(bbmle)
 library(lme4)
 library(lmerTest)
+library(multcomp)
+
 ```
 
 ## Read in and organize fitness data
@@ -29,12 +31,13 @@ smbfit_raw_data_clean <- smbfit_raw_data %>%
          tl_alive_cm = tl_alive/10,
          sex = factor(sex),
          hyb_status = factor(hyb_status),
-         log_mass = log10(mass_g))
+         log_mass = log10(mass_g),
+         pure_admix = factor(pure_admix))
 
 smbfit_raw_data_clean <- smbfit_raw_data_clean %>%
   mutate(condition = mass_g/(tl_alive_cm^3))
 
-smbfit_mass_tl_data <- smbfit_raw_data_clean[,-c(2:4,6:8,10:11,13:17,19:23,25:40)]
+smbfit_mass_tl_data <- smbfit_raw_data_clean[,-c(2:4,6:8,10:11,13:17,19:23,25:33,36:37,39:41)]
 
 smbfit_raw_data_clean_no_outlier <- smbfit_mass_tl_data[-c(13),]
 
@@ -196,7 +199,7 @@ elk_age_condition <- ggplot(fitness_data_4yo_elk, aes(x = consensus_age, y = con
   scale_x_continuous(expand = c(0, 0), breaks = seq(0,4,1)) + 
   scale_y_continuous(expand = c(0, 0)) +
   expand_limits(y = 0.01, x = 4) +
-  ylab(expression(Condition~g/cm^{"3"})) + 
+  ylab(expression(Condition~(g/cm^{"3"}))) + 
   theme(axis.title.x = element_text(margin = margin(t = 10))) +
   theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
 
@@ -242,7 +245,7 @@ gen_data <- read_csv("../../raw_data/genotype_data/genotype_files/smbfit_msat_ge
 
 gen_data_all_with_fitness <- merge(fitness_data_4yo, gen_data, by = "sample_id")
 
-gen_data_all <- gen_data_all_with_fitness[,-c(2:11)]
+gen_data_all <- gen_data_all_with_fitness[,-c(2:13)]
 gen_data_all <- column_to_rownames(gen_data_all, "sample_id")
 
 gen_data_inbreedr <- convert_raw(gen_data_all)
@@ -257,8 +260,8 @@ gen_data_elk_with_fitness <- gen_data_all_with_fitness %>%
 gen_data_bsug_with_fitness <- column_to_rownames(gen_data_bsug_with_fitness, "sample_id")
 gen_data_elk_with_fitness <- column_to_rownames(gen_data_elk_with_fitness, "sample_id")
 
-gen_data_bsug <- gen_data_bsug_with_fitness[,-c(1:10)]
-gen_data_elk <- gen_data_elk_with_fitness[,-c(1:10)]
+gen_data_bsug <- gen_data_bsug_with_fitness[,-c(1:12)]
+gen_data_elk <- gen_data_elk_with_fitness[,-c(1:12)]
 
 gen_data_bsug_inbreedr <- convert_raw(gen_data_bsug)
 check_data(gen_data_bsug_inbreedr)
@@ -382,8 +385,93 @@ dev.off()
 
 ```
 
+## See if there is a difference in heterozygosity between pure and admixed samples
+```{r}
 
-## Keep all ages in teh data
+# Read in genetic data with inbreed R
+gen_data_with_refs_fit <- read_csv("../../raw_data/genotype_data/genotype_files/smbfit_msat_genotypes.csv")
+
+ref_fit_data <- gen_data_with_refs_fit[,(2:4)]
+ref_fit_data <- ref_fit_data %>%
+  mutate(hyb_status = factor(hyb_status),
+         pure_admix = factor(pure_admix),
+         population = factor(population))
+
+gen_data_with_refs <- gen_data_with_refs_fit[,-c(2:4)]
+gen_data_with_refs <- column_to_rownames(gen_data_with_refs, "sample_id")
+
+gen_data_with_refs_inbreedr <- convert_raw(gen_data_with_refs)
+check_data(gen_data_with_refs_inbreedr)
+
+
+het_all_with_ref <- as.data.frame(sMLH(gen_data_with_refs_inbreedr))
+het_all_with_ref <- rownames_to_column(het_all_with_ref, "sample_id")
+het_all_with_ref <- het_all_with_ref %>%
+  mutate(sample_id = factor(sample_id))
+colnames(het_all_with_ref) <- c("sample_id","het")
+
+
+het_fit_with_ref <- cbind(ref_fit_data,het_all_with_ref)
+
+levels(het_fit_with_ref$population) <- gsub(" ", "\n", levels(het_fit_with_ref$population))
+
+het_by_hybrid_status <- ggplot(het_fit_with_ref, aes(x = population, y = het, fill = hyb_status)) + 
+  geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3) +
+  geom_point(position = position_jitterdodge(), size = 3, color = "black", pch = 21, show.legend = F) +
+  theme_set(theme_cowplot(12)) + 
+  labs(x = "River/Population", y = "Multilocus heterozygosity") +
+  scale_fill_manual(values = c("mediumpurple","deepskyblue2","deeppink2","grey","grey")) +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  theme(legend.position = c(0.75,0.2)) +
+  expand_limits(y = 1) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+
+het_by_population <- ggplot(het_fit_with_ref, aes(x = population, y = het, fill = "grey")) + 
+  geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3) +
+  geom_point(position = position_jitter(width = 0.1), size = 3, color = "black", pch = 21, show.legend = F) +
+  theme_set(theme_cowplot(12)) + 
+  labs(x = "River/Population", y = "Multilocus heterozygosity") +
+  scale_fill_manual(values = c("grey","grey","grey","grey")) +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  theme(legend.position = c(0.75,0.2)) +
+  expand_limits(y = 1) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+
+
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/hfc_plots/het_comparison_ref_pops.pdf", width = 8, height = 10)
+
+
+plot_grid(het_by_population, 
+          het_by_hybrid_status,
+          nrow = 2,
+          labels = c("a","b"),
+          label_size = 25,
+          align = "v",
+          label_y = 1.03)
+
+dev.off()
+
+## Run linear model
+het_all_with_ref_lm <- lm(het ~ population, het_fit_with_ref)
+summary(het_all_with_ref_lm)
+
+post_het_ref <- glht(het_all_with_ref_lm, mcp(population = "Tukey"))
+summary(post_het_ref)
+
+
+het_all_with_ref_hyb_status_lm <- lm(het ~ hyb_status, het_fit_with_ref)
+summary(het_all_with_ref_hyb_status_lm)
+
+post_het_ref_hyb_status <- glht(het_all_with_ref_hyb_status_lm, mcp(hyb_status = "Tukey"))
+summary(post_het_ref_hyb_status)
+
+```
+
+## Keep all ages in the data
 ```{r}
 
 # Read in genetic data with inbreed R
