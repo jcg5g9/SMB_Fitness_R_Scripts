@@ -18,47 +18,432 @@ library(lmerTest)
 library(gstudio)
 ```
 
-## Read in genetic data and clean data.
+## Read in genetic data.
 ```{r}
+#Read in all Northern Smallmouth Bass data only
 gen_data_northern <- read_population("../../raw_data/genotype_data/genotype_files/smbfit_msat_genotypes_northern_only.csv", type = "column", locus.columns = 4:31)
 
+#39 total Northern samples
+      #20 in the Northern range
+      #19 in the Neosho range
+
 #Data Cleaning:
+
 #Change categorical variables to factors
 gen_data_northern$range <- as.factor(gen_data_northern$range)
 gen_data_northern$sample_id <- as.factor(gen_data_northern$sample_id)
+gen_data_northern$river <- as.factor(gen_data_northern$river)
+
 ```
 
+## Measure different genetic diversity metrics across ranges (Northern within the Northern range and Northern within the Neosho range) and at the population level (big sugar creek, and then the two river systems within the Northern range)
 ```{r}
-#HGenetic metrics by locus
-A_95_bypop <- genetic_diversity(gen_data_northern, mode = "A95", stratum = "range") # non-rare allele frequency by individual
-Ho_bylocus <- genetic_diversity(gen_data_northern, mode = "Ho", stratum = "range") 
-He_bylocus <- genetic_diversity(gen_data_northern,  mode = "He", stratum = "range")
-A_bylocus <- genetic_diversity(gen_data_northern, mode = "A", stratum = "range") 
-Ae_bylocus <- genetic_diversity(gen_data_northern, mode = "Ae", stratum = "range")
-Fis_bylocus <- genetic_diversity(gen_data_northern, mode = "Fis", stratum = "range")
+#Genetic metrics by Ranbge, by locus
+A_95_bylocus_range <- genetic_diversity(gen_data_northern, mode = "A95", stratum = "range") # non-rare allele frequency by individual
+Ho_bylocus_range <- genetic_diversity(gen_data_northern, mode = "Ho", stratum = "range") 
+He_bylocus_range <- genetic_diversity(gen_data_northern,  mode = "He", stratum = "range")
+A_bylocus_range <- genetic_diversity(gen_data_northern, mode = "A", stratum = "range") 
+Ae_bylocus_range <- genetic_diversity(gen_data_northern, mode = "Ae", stratum = "range")
+Fis_bylocus_range <- genetic_diversity(gen_data_northern, mode = "Fis", stratum = "range")
 
-
-Ho_pop_ave <- Ho_pop %>% 
+#Average Genetic metrics by Range
+A_95_ave_range <- A_95_bylocus_range %>% 
   group_by(Stratum) %>% 
-  summarize(mean_Ho = mean(Ho)) # calculate average observed heterozygosity for populations
+  summarize (mean_A95 = mean(A95)) 
 
-He_pop_ave <- He_pop %>% 
+Ho_ave_range <- Ho_bylocus_range %>% 
   group_by(Stratum) %>% 
-  summarize(mean_He = mean(He)) # calculate average expected heterozy
+  summarize(mean_Ho = mean(Ho)) 
 
-A_bypop <- A_bylocus %>%
+He_ave_range <- He_bylocus_range %>% 
   group_by(Stratum) %>% 
-  summarize (mean_A = mean(A)) # average non-rare allele frequency by population
+  summarize(mean_He = mean(He)) 
 
-Ae_bypop <- Ae_bylocus %>% 
+A_ave_range <- A_bylocus_range %>%
   group_by(Stratum) %>% 
-  summarize (mean_Ae = mean(Ae)) # average non-rare allele frequency by population
+  summarize (mean_A = mean(A)) 
 
-A_95_bypop <- A_95_bypop %>% 
+Ae_ave_range <- Ae_bylocus_range %>% 
   group_by(Stratum) %>% 
-  summarize (mean_A95 = mean(A95)) # average non-rare allele frequency by population
+  summarize (mean_Ae = mean(Ae)) 
 
-Fis_bypop <- Fis_bylocus %>% 
+Fis_ave_range <- Fis_bylocus_range %>% 
   group_by(Stratum) %>% 
-  summarize (mean_Fis = mean(Fis)) # average non-rare allele frequency by population
+  summarize (mean_Fis = mean(Fis))
+
+
+#Genetic metrics by Ranbge, by locus
+A_95_bylocus_river <- genetic_diversity(gen_data_northern, mode = "A95", stratum = "river") # non-rare allele frequency by individual
+Ho_bylocus_river  <- genetic_diversity(gen_data_northern, mode = "Ho", stratum = "river") 
+He_bylocus_river  <- genetic_diversity(gen_data_northern,  mode = "He", stratum = "river")
+A_bylocus_river  <- genetic_diversity(gen_data_northern, mode = "A", stratum = "river") 
+Ae_bylocus_river  <- genetic_diversity(gen_data_northern, mode = "Ae", stratum = "river")
+Fis_bylocus_river  <- genetic_diversity(gen_data_northern, mode = "Fis", stratum = "river")
+
+#Average Genetic metrics by Range
+A_95_ave_river  <- A_95_bylocus_river %>% 
+  group_by(Stratum) %>% 
+  summarize (mean_A95 = mean(A95)) 
+
+Ho_ave_river  <- Ho_bylocus_river %>% 
+  group_by(Stratum) %>% 
+  summarize(mean_Ho = mean(Ho)) 
+
+He_ave_river <- He_bylocus_river %>% 
+  group_by(Stratum) %>% 
+  summarize(mean_He = mean(He)) 
+
+A_ave_river <- A_bylocus_river %>%
+  group_by(Stratum) %>% 
+  summarize (mean_A = mean(A)) 
+
+Ae_ave_river <- Ae_bylocus_river %>% 
+  group_by(Stratum) %>% 
+  summarize (mean_Ae = mean(Ae)) 
+
+Fis_ave_river <- Fis_bylocus_river %>% 
+  group_by(Stratum) %>% 
+  summarize (mean_Fis = mean(Fis)) 
 ```
+
+## Gather up all data tables and convert into one usable table for the ms
+```{r}
+A_95_bylocus_range <- A_95_bylocus_range %>%
+  mutate(Stratum = factor(Stratum),
+         Locus = factor(Locus),
+         A95 = as.numeric(A95))
+
+Ho_bylocus_range <- Ho_bylocus_range %>%
+  mutate(Stratum = factor(Stratum),
+         Locus = factor(Locus),
+         Ho = as.numeric(Ho))
+
+He_bylocus_range <- He_bylocus_range %>%
+  mutate(Stratum = factor(Stratum),
+         Locus = factor(Locus),
+         He = as.numeric(He))
+
+A_bylocus_range <- A_bylocus_range %>%
+  mutate(Stratum = factor(Stratum),
+         Locus = factor(Locus),
+         A = as.numeric(A))
+
+Ae_bylocus_range <- Ae_bylocus_range %>%
+  mutate(Stratum = factor(Stratum),
+         Locus = factor(Locus),
+         Ae = as.numeric(Ae))
+
+Fis_bylocus_range <- Fis_bylocus_range %>%
+  mutate(Stratum = factor(Stratum),
+         Locus = factor(Locus),
+         Fis = as.numeric(Fis))
+
+all_gen_metrics_by_range <- cbind(A_bylocus_range, 
+      A_95_bylocus_range, 
+      Ae_bylocus_range, 
+      Ho_bylocus_range, 
+      He_bylocus_range,
+      Fis_bylocus_range)
+
+all_gen_metrics_by_range <- all_gen_metrics_by_range[,-c(4:5,7:8,10:11,13:14,16:17)]
+
+write.table(all_gen_metrics_by_range,"~/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/tables_and_figures/tables_being_built/all_gen_metrics_by_range", sep="\t")
+
+A_95_bylocus_river <- A_95_bylocus_river %>%
+  mutate(Stratum = factor(Stratum),
+         Locus = factor(Locus),
+         A95 = as.numeric(A95))
+
+Ho_bylocus_river <- Ho_bylocus_river %>%
+  mutate(Stratum = factor(Stratum),
+         Locus = factor(Locus),
+         Ho = as.numeric(Ho))
+
+He_bylocus_river <- He_bylocus_river %>%
+  mutate(Stratum = factor(Stratum),
+         Locus = factor(Locus),
+         He = as.numeric(He))
+
+A_bylocus_river <- A_bylocus_river %>%
+  mutate(Stratum = factor(Stratum),
+         Locus = factor(Locus),
+         A = as.numeric(A))
+
+Ae_bylocus_river <- Ae_bylocus_river %>%
+  mutate(Stratum = factor(Stratum),
+         Locus = factor(Locus),
+         Ae = as.numeric(Ae))
+
+Fis_bylocus_river <- Fis_bylocus_river %>%
+  mutate(Stratum = factor(Stratum),
+         Locus = factor(Locus),
+         Fis = as.numeric(Fis))
+
+all_gen_metrics_by_river <- cbind(A_bylocus_river, 
+      A_95_bylocus_river, 
+      Ae_bylocus_river, 
+      Ho_bylocus_river, 
+      He_bylocus_river,
+      Fis_bylocus_river)
+
+all_gen_metrics_by_river <- all_gen_metrics_by_river[,-c(4:5,7:8,10:11,13:14,16:17)]
+
+write.table(all_gen_metrics_by_river,"~/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/tables_and_figures/tables_being_built/all_gen_metrics_by_river", sep="\t")
+```
+
+## Plotting by range
+```{r}
+
+#levels(A_95_bylocus_range$Stratum) <- c("Neosho","Northern")
+
+#A95_bylocus_range_plot <- ggplot(A_95_bylocus_range, aes(x = Stratum, y = A95)) +
+#  geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3, fill = "grey") +
+ # geom_point(position = position_jitter(width = 0.1), size = 3, color = "black", pch = 21, show.legend = F, fill = "grey") +
+  #theme_set(theme_cowplot(12)) +
+  #labs(x = "Subspecies Range", y = "A95") +
+  #scale_fill_manual(values = c("grey","grey")) +
+  #theme(axis.title = element_text(size = 20)) +
+  #theme(axis.text = element_text(size = 15)) +
+  #ylab(expression(~A[95])) +
+  #theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  #theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  #theme(axis.text.x = element_blank()) + 
+  #scale_y_continuous(labels = number_format(accuracy = 0.01,
+                              #   decimal.mark = '.'))
+  
+levels(Ho_bylocus_range$Stratum) <- c("Neosho","Northern")
+
+Ho_bylocus_range_plot <- ggplot(Ho_bylocus_range, aes(x = Stratum, y = Ho)) +
+  geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3, fill = "grey") +
+  geom_point(position = position_jitter(width = 0.1), size = 3, color = "black", pch = 21, show.legend = F, fill = "grey") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Subspecies Range", y = "Ho") +
+  scale_fill_manual(values = c("grey","grey")) +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  ylab(expression(~H[O])) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))  +
+  theme(axis.text.x = element_blank()) + 
+  scale_y_continuous(labels = number_format(accuracy = 0.01,
+                                 decimal.mark = '.'))
+  
+levels(He_bylocus_range$Stratum) <- c("Neosho","Northern")
+
+He_bylocus_range_plot <- ggplot(He_bylocus_range, aes(x = Stratum, y = He)) +
+  geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3, fill = "grey") +
+  geom_point(position = position_jitter(width = 0.1), size = 3, color = "black", pch = 21, show.legend = F, fill = "grey") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Subspecies Range", y = "He") +
+  scale_fill_manual(values = c("grey","grey")) +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  ylab(expression(~H[E])) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))  +
+  scale_y_continuous(labels = number_format(accuracy = 0.01,
+                                 decimal.mark = '.'))
+  
+levels(A_bylocus_range$Stratum) <- c("Neosho","Northern")
+
+A_bylocus_range_plot <- ggplot(A_bylocus_range, aes(x = Stratum, y = A)) +
+  geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3, fill = "grey") +
+  geom_point(position = position_jitter(width = 0.1), size = 3, color = "black", pch = 21, show.legend = F, fill = "grey") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Subspecies Range", y = "A") +
+  scale_fill_manual(values = c("grey","grey")) +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))  +
+  theme(axis.text.x = element_blank()) + 
+  scale_y_continuous(labels = number_format(accuracy = 0.01,
+                                 decimal.mark = '.'))
+
+#levels(Ae_bylocus_range$Stratum) <- c("Neosho","Northern")
+
+#Ae_bylocus_range_plot <- ggplot(Ae_bylocus_range, aes(x = Stratum, y = Ae)) +
+ # geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3, fill = "grey") +
+  #geom_point(position = position_jitter(width = 0.1), size = 3, color = "black", pch = 21, show.legend = F, fill = "grey") +
+  #theme_set(theme_cowplot(12)) +
+  #labs(x = "Subspecies Range", y = "Ae") +
+  #scale_fill_manual(values = c("grey","grey")) +
+  #theme(axis.title = element_text(size = 20)) +
+  #theme(axis.text = element_text(size = 15)) +
+  #ylab(expression(~A[E])) +
+  #theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  #theme(panel.border = element_rect(colour = "black", fill=NA, size=1))  +
+  #theme(axis.text.x = element_blank()) + 
+  #scale_y_continuous(labels = number_format(accuracy = 0.01,
+                              #   decimal.mark = '.'))
+
+levels(Fis_bylocus_range$Stratum) <- c("Neosho","Northern")
+
+Fis_bylocus_range_plot <- ggplot(Fis_bylocus_range, aes(x = Stratum, y = Fis)) +
+  geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3, fill = "grey") +
+  geom_point(position = position_jitter(width = 0.1), size = 3, color = "black", pch = 21, show.legend = F, fill = "grey") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Subspecies Range", y = "Fis") +
+  scale_fill_manual(values = c("grey","grey")) +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  ylab(expression(~F[IS])) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/founder_effect_plots/founder_effect_by_range.pdf", width = 12, height = 10)
+
+plot_grid(A_bylocus_range_plot,
+          Ho_bylocus_range_plot,
+          He_bylocus_range_plot,
+          Fis_bylocus_range_plot,
+          nrow = 3,
+          labels = c("a","b","c","d"),
+          label_size = 25,
+          align = "v")
+
+dev.off()
+
+##Run linear models 
+
+A_bylocus_range_lm <- lm(A ~ Stratum, A_bylocus_range)
+summary(A_bylocus_range_lm)
+
+Ho_bylocus_range_lm <- lm(Ho ~ Stratum, Ho_bylocus_range)
+summary(Ho_bylocus_range_lm)
+
+He_bylocus_range_lm <- lm(He ~ Stratum, He_bylocus_range)
+summary(He_bylocus_range_lm)
+
+Fis_bylocus_range_lm <- lm(Fis ~ Stratum, Fis_bylocus_range)
+summary(Fis_bylocus_range_lm )
+```
+
+## Plotting by River
+```{r}
+#levels(A_95_bylocus_river$Stratum) <- c("Big Sugar Creek","Elk River", "Tablerock Lake","White River")
+
+#A95_bylocus_river_plot <- ggplot(A_95_bylocus_river, aes(x = Stratum, y = A95)) +
+ # geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3, fill = "grey") +
+  #geom_point(position = position_jitter(width = 0.1), size = 3, color = "black", pch = 21, show.legend = F, fill = "grey") +
+  #theme_set(theme_cowplot(12)) +
+  #labs(x = "River", y = "A95") +
+  #scale_fill_manual(values = c("grey","grey")) +
+  #theme(axis.title = element_text(size = 20)) +
+  #theme(axis.text = element_text(size = 15)) +
+  #ylab(expression(~A[95])) +
+  #theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  #theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) + 
+  #theme(axis.title.x = element_blank()) +
+  #theme(axis.text.x = element_blank()) + 
+  #scale_y_continuous(labels = number_format(accuracy = 0.01,
+    #                             decimal.mark = '.'))
+  
+levels(Ho_bylocus_river$Stratum) <- c("Big Sugar Creek","Elk River", "Tablerock Lake","White River")
+
+Ho_bylocus_river_plot <- ggplot(Ho_bylocus_river, aes(x = Stratum, y = Ho)) +
+  geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3, fill = "grey") +
+  geom_point(position = position_jitter(width = 0.1), size = 3, color = "black", pch = 21, show.legend = F, fill = "grey") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "River", y = "Ho") +
+  scale_fill_manual(values = c("grey","grey")) +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  ylab(expression(~H[O])) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) + 
+  theme(axis.text.x = element_blank())
+  
+levels(He_bylocus_river$Stratum) <- c("Big Sugar Creek","Elk River", "Tablerock Lake","White River")
+
+He_bylocus_river_plot <- ggplot(He_bylocus_river, aes(x = Stratum, y = He)) +
+  geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3, fill = "grey") +
+  geom_point(position = position_jitter(width = 0.1), size = 3, color = "black", pch = 21, show.legend = F, fill = "grey") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "River", y = "He") +
+  scale_fill_manual(values = c("grey","grey")) +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  ylab(expression(~H[E])) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) 
+  
+levels(A_bylocus_river$Stratum) <- c("Big Sugar Creek","Elk River", "Tablerock Lake","White River")
+
+A_bylocus_river_plot <- ggplot(A_bylocus_river, aes(x = Stratum, y = A)) +
+  geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3, fill = "grey") +
+  geom_point(position = position_jitter(width = 0.1), size = 3, color = "black", pch = 21, show.legend = F, fill = "grey") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "River", y = "A") +
+  scale_fill_manual(values = c("grey","grey")) +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) + 
+  theme(axis.text.x = element_blank()) + 
+  scale_y_continuous(labels = number_format(accuracy = 0.01,
+                                 decimal.mark = '.'))
+  
+#levels(Ae_bylocus_river$Stratum) <- c("Big Sugar Creek","Elk River", "Tablerock Lake","White River")
+
+#Ae_bylocus_river_plot <- ggplot(Ae_bylocus_river, aes(x = Stratum, y = Ae)) +
+ # geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3, fill = "grey") +
+  #geom_point(position = position_jitter(width = 0.1), size = 3, color = "black", pch = 21, show.legend = F, fill = "grey") +
+  #theme_set(theme_cowplot(12)) +
+  #labs(x = "River", y = "Ae") +
+  #scale_fill_manual(values = c("grey","grey")) +
+  #theme(axis.title = element_text(size = 20)) +
+  #theme(axis.text = element_text(size = 15)) +
+  #ylab(expression(~A[E])) +
+  #theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  #theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) + 
+  #theme(axis.title.x = element_blank()) +
+  #theme(axis.text.x = element_blank()) + 
+  #scale_y_continuous(labels = number_format(accuracy = 0.01,
+   #                              decimal.mark = '.'))
+  
+levels(Fis_bylocus_river$Stratum) <- c("Big Sugar Creek","Elk River", "Tablerock Lake","White River")
+
+Fis_bylocus_river_plot <- ggplot(Fis_bylocus_river, aes(x = Stratum, y = Fis)) +
+  geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3, fill = "grey") +
+  geom_point(position = position_jitter(width = 0.1), size = 3, color = "black", pch = 21, show.legend = F, fill = "grey") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "River", y = "Fis") +
+  scale_fill_manual(values = c("grey","grey")) +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  ylab(expression(~F[IS])) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) + 
+  scale_y_continuous(labels = number_format(accuracy = 0.01,
+                                 decimal.mark = '.'))
+  
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/founder_effect_plots/founder_effect_by_river.pdf", width = 13, height = 10)
+
+plot_grid(A_bylocus_river_plot,
+          Ho_bylocus_river_plot,
+          He_bylocus_river_plot,
+          Fis_bylocus_river_plot,
+          nrow = 3,
+          labels = c("a","b","c","d"),
+          label_size = 25,
+          align = "v")
+
+dev.off()
+
+##Run linear models 
+A_bylocus_river_lm <- lm(A ~ Stratum, A_bylocus_river)
+summary(A_bylocus_river_lm)
+
+Ho_bylocus_river_lm <- lm(Ho ~ Stratum, Ho_bylocus_river)
+summary(Ho_bylocus_river_lm)
+
+He_bylocus_river_lm <- lm(He ~ Stratum, He_bylocus_river)
+summary(He_bylocus_river_lm)
+
+Fis_bylocus_river_lm <- lm(Fis ~ Stratum, Fis_bylocus_river)
+summary(Fis_bylocus_river_lm )
+
+```
+
+
