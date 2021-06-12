@@ -26,6 +26,8 @@ library(FSAdata)
 library(FSA) #v.0.8.32
 library(boot)
 library(car)
+
+citation("car")
 ```
 
 ## Read in and clean  data for analysis
