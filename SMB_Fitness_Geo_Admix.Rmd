@@ -14,6 +14,7 @@ library(nlme)
 library(bbmle)
 library(MuMIn)
 library(lme4)
+library(car)
 
 ```
 
@@ -53,8 +54,8 @@ smbfit_data_bsug <- smbfit_data_noNA %>%
 
 ## Plot proportion of northern ancestry as a function of distance from origin
 ```{r}
-
-elk_dist_admix <- ggplot(smbfit_data_elk, aes(x = dist_from_hw, y = prop_nor_no_hsyc)) + 
+#How much northern ancestry moving down the elk river
+elk_dist_prop_northern <- ggplot(smbfit_data_elk, aes(x = dist_from_hw, y = prop_nor_no_hsyc)) + 
   geom_point(size = 2.5) +
   geom_smooth(method = "lm", se = F, color = "black") +
   theme_set(theme_cowplot(12)) +
@@ -63,12 +64,12 @@ elk_dist_admix <- ggplot(smbfit_data_elk, aes(x = dist_from_hw, y = prop_nor_no_
   theme(axis.text = element_text(size = 15)) +
   scale_x_continuous(expand = c(0, 0), breaks = seq(0,12000,2000)) + 
   scale_y_continuous(expand = c(0, 0)) +
-  expand_limits(y = 1, x = 12500) +
+  expand_limits(y = 1, x = 12000) +
   theme(axis.title.x = element_text(margin = margin(t = 10))) +
   theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
   
-
-bsug_dist_admix <- ggplot(smbfit_data_bsug, aes(x = dist_from_df, y = prop_nor_no_hsyc)) + 
+#How much northern ancestry moving down big sugar creek
+bsug_dist_prop_northern <- ggplot(smbfit_data_bsug, aes(x = dist_from_df, y = prop_nor_no_hsyc)) + 
   geom_point(size = 2.5) +
   geom_smooth(method = "lm", se = F, color = "black") +
   theme_set(theme_cowplot(12)) +
@@ -81,6 +82,22 @@ bsug_dist_admix <- ggplot(smbfit_data_bsug, aes(x = dist_from_df, y = prop_nor_n
   theme(axis.title.y = element_blank()) +
   theme(axis.title.x = element_text(margin = margin(t = 10))) +
   theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+
+#How much northern ancestry moving down both streams altogether
+all_dist_prop_northern <- ggplot(smbfit_data_noNA, aes(x = dist_from_df, y = prop_nor_no_hsyc)) + 
+  geom_point(size = 2.5) +
+  geom_smooth(method = "lm", se = F, color = "black") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Distance from DFA (m)", y = "Northern Ancestry (%)") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0,18000,3000)) + 
+  scale_y_continuous(expand = c(0, 0)) +
+  expand_limits(y = 1, x = 18000) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+
+
 
 
 smbfit_data_gen_plot <- smbfit_data_noNA %>%
@@ -104,12 +121,13 @@ nor_admix_by_river <- ggplot(smbfit_data_gen_plot, aes(x = river, y = prop_nor_n
 
   
 
-pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/admixture_geo_plots/admix_by_rivers.pdf", width = 15, height = 5)
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/admixture_geo_plots/nor_ancestry_by_rivers.pdf", width = 12, height = 12)
 
-plot_grid(elk_dist_admix,
-          bsug_dist_admix,
+plot_grid(all_dist_prop_northern,
+          bsug_dist_prop_northern,
+          elk_dist_prop_northern,
           nor_admix_by_river,
-          nrow = 1)
+          nrow = 2)
 
 dev.off()
 
@@ -119,13 +137,27 @@ dev.off()
 ```{r}
 coef(summary(lmer(prop_nor_no_hsyc ~ dist_from_df + (1|sex), data = smbfit_data_bsug)))
 r.squaredGLMM(lmer(prop_nor_no_hsyc ~ dist_from_df + (1|sex), data = smbfit_data_bsug))
-#p = 0.367
+Anova(lmer(prop_nor_no_hsyc ~ dist_from_df + (1|sex), data = smbfit_data_bsug))
+anova(lmer(prop_nor_no_hsyc ~ dist_from_df + (1|sex), data = smbfit_data_bsug))
+#p = 0.3612
 #R2 = 0.019
+#F = 0.834
 
 coef(summary(lmer(prop_nor_no_hsyc ~ dist_from_hw + (1|sex), data = smbfit_data_elk)))
 r.squaredGLMM(lmer(prop_nor_no_hsyc ~ dist_from_hw + (1|sex), data = smbfit_data_elk))
-#p = 0.445
+Anova(lmer(prop_nor_no_hsyc ~ dist_from_hw + (1|sex), data = smbfit_data_elk))
+anova(lmer(prop_nor_no_hsyc ~ dist_from_df + (1|sex), data = smbfit_data_elk))
+#p = 0.442
 #R2 = 0.008
+#F = 0.590
+
+coef(summary(lmer(prop_nor_no_hsyc ~ dist_from_hw + (1|sex), data = smbfit_data_noNA)))
+r.squaredGLMM(lmer(prop_nor_no_hsyc ~ dist_from_hw + (1|sex), data = smbfit_data_noNA))
+Anova(lmer(prop_nor_no_hsyc ~ dist_from_hw + (1|sex), data = smbfit_data_noNA))
+anova(lmer(prop_nor_no_hsyc ~ dist_from_df + (1|sex), data = smbfit_data_noNA))
+#p = 0.262
+#R2 = 0.011
+#F = 1.258
 
 summary(lmer(prop_nor_no_hsyc ~ river + (1|sex), data = smbfit_data_gen_plot))
 #p = 0.526
@@ -145,16 +177,16 @@ smbfit_hyb_status_proportions_elk <- smbfit_hyb_status_proportions %>%
 smbfit_hyb_status_proportions_bsug <- smbfit_hyb_status_proportions %>%
   filter(river == "BSUG")
 
-dist_admix_indivs <- ggplot(smbfit_hyb_status_proportions, aes(x = dist, y = prop_admix)) + 
+dist_nor_indivs_all <- ggplot(smbfit_hyb_status_proportions, aes(x = dist, y = prop_nor)) + 
   geom_point(size = 2.5) +
   geom_smooth(method = "lm", se = F, color = "black") +
   theme_set(theme_cowplot(12)) +
-  labs(x = "Average distance from DFA (m)", y = "Proportion admixed (%)") +
+  labs(x = "Average distance from DFA (m)", y = "Proportion northern (%)") +
   theme(axis.title = element_text(size = 20)) +
   theme(axis.text = element_text(size = 15)) +
-  scale_x_continuous(expand = c(0, 0), breaks = seq(0,17500,4000)) + 
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0,18000,4000)) + 
   scale_y_continuous(expand = c(0, 0)) +
-  expand_limits(y = 0.6, x = 17000) +
+  expand_limits(y = 0.6, x = 18000) +
   theme(axis.title.x = element_text(margin = margin(t = 10))) +
   theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
   
@@ -185,12 +217,12 @@ dist_nor_indivs_bsug <- ggplot(smbfit_hyb_status_proportions_bsug, aes(x = dist,
   theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
 
 
-pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/admixture_geo_plots/dist_proportion_plots.pdf", width = 15, height = 5)
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/admixture_geo_plots/dist_proportion_plots.pdf", width = 5, height = 15)
 
-plot_grid(dist_admix_indivs,
-          dist_nor_indivs_elk,
+plot_grid(dist_nor_indivs_all,
           dist_nor_indivs_bsug,
-          nrow = 1)
+          dist_nor_indivs_elk,
+          nrow = 3)
 
 dev.off()
 
@@ -199,12 +231,18 @@ dev.off()
 ## Run linear mixed effect models for each of the above plots, taking sex into account as a random effect
 ```{r}
 
-summary(lm(prop_admix ~ dist, data = smbfit_hyb_status_proportions))
-#p = 0.920
-
 summary(lm(prop_nor ~ dist, data = smbfit_hyb_status_proportions))
 #p = 0.1735
+#R2 = 0.120
+#F = 2.232
+
+summary(lm(prop_nor ~ dist_from_hw, data = smbfit_hyb_status_proportions_elk))
+#p = 0.149
+#R2 = 0.306
+#F = 3.18
 
 summary(lm(prop_nor ~ dist, data = smbfit_hyb_status_proportions_bsug))
 #p = 0.084
+#R2 = 0.76
+#F = 10.5
 ```
