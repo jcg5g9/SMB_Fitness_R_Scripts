@@ -17,7 +17,7 @@ library(bbmle)
 library(lme4)
 library(lmerTest)
 library(multcomp)
-citation("inbreedR")
+library(scales)
 ```
 
 ## Read in and organize fitness data
@@ -73,8 +73,8 @@ global_mass_tl <- ggplot(fitness_data_4yo, aes(x = tl_alive, y = mass_g)) +
   scale_y_continuous(expand = c(0, 0)) +
   expand_limits(y = 700, x = 400) +
   theme(axis.title.x = element_text(margin = margin(t = 10))) +
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  theme(axis.title.x = element_blank())
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) 
+
   
 mass_by_tl_corr <- lm(mass_g ~ tl_alive, fitness_data_4yo)
 summary(mass_by_tl_corr) #r2 = 0.937, p <0.001
@@ -92,8 +92,8 @@ global_age_condition <- ggplot(fitness_data_4yo, aes(x = consensus_age, y = cond
   expand_limits(y = 0.01, x = 4) +
   ylab(expression(Condition~(g/cm^{"3"}))) + 
   theme(axis.title.x = element_text(margin = margin(t = 10))) +
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  theme(axis.title.x = element_blank())
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) 
+
 
 condition_by_age_corr <- lm(condition ~ consensus_age, fitness_data_4yo)
 summary(condition_by_age_corr) #r2 = 0.009, p = 0.346
@@ -105,8 +105,9 @@ global_condition_norm <- ggplot(fitness_data_4yo, aes(condition)) +
   labs(x = "Condition (g/cm3)", y = "Frequency") +
   theme(axis.title = element_text(size = 20)) +
   theme(axis.text = element_text(size = 15)) +
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  theme(axis.title.x = element_blank())
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))  +
+  xlab(expression(Condition~(g/cm^{"3"}))) 
+
 
 shapiro.test(fitness_data_4yo$condition)
 #p = 0.4304, W = 0.969
@@ -129,7 +130,8 @@ bsug_mass_tl <- ggplot(fitness_data_4yo_bsug, aes(x = tl_alive, y = mass_g)) +
   expand_limits(y = 600, x = 350) +
   theme(axis.title.x = element_text(margin = margin(t = 10))) +
   theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  theme(axis.title.x = element_blank())
+  theme(axis.title.y = element_blank())
+
   
 mass_by_tl_corr_bsug <- lm(mass_g ~ tl_alive, fitness_data_4yo_bsug)
 summary(mass_by_tl_corr_bsug) #r2 = 0.94, p <0.001
@@ -148,7 +150,8 @@ bsug_age_condition <- ggplot(fitness_data_4yo_bsug, aes(x = consensus_age, y = c
   ylab(expression(Condition~(g/cm^{"3"}))) + 
   theme(axis.title.x = element_text(margin = margin(t = 10))) +
   theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  theme(axis.title.x = element_blank())
+  theme(axis.title.y = element_blank())
+
 
 condition_by_age_corr_bsug <- lm(condition ~ consensus_age, fitness_data_4yo_bsug)
 summary(condition_by_age_corr_bsug) #r2 = 0.05, p = 0.147
@@ -161,7 +164,10 @@ bsug_condition_norm <- ggplot(fitness_data_4yo_bsug, aes(condition)) +
   theme(axis.title = element_text(size = 20)) +
   theme(axis.text = element_text(size = 15)) +
   theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  theme(axis.title.x = element_blank())
+  theme(axis.title.y = element_blank())  +
+  xlab(expression(Condition~(g/cm^{"3"})))
+ 
+
 
 condition_norm_bsug <- shapiro.test(fitness_data_4yo_bsug$condition)
 #p = 0.117, W = 0.955
@@ -183,7 +189,9 @@ elk_mass_tl <- ggplot(fitness_data_4yo_elk, aes(x = tl_alive, y = mass_g)) +
   scale_y_continuous(expand = c(0, 0)) +
   expand_limits(y = 600, x = 350) +
   theme(axis.title.x = element_text(margin = margin(t = 10))) +
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(axis.title.y = element_blank()) 
+
   
 mass_by_tl_corr_elk <- lm(mass_g ~ tl_alive, fitness_data_4yo_elk)
 summary(mass_by_tl_corr_elk) #r2 = 0.94, p <0.001
@@ -201,7 +209,9 @@ elk_age_condition <- ggplot(fitness_data_4yo_elk, aes(x = consensus_age, y = con
   expand_limits(y = 0.01, x = 4) +
   ylab(expression(Condition~(g/cm^{"3"}))) + 
   theme(axis.title.x = element_text(margin = margin(t = 10))) +
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(axis.title.y = element_blank()) 
+
 
 condition_by_age_corr_elk <- lm(condition ~ consensus_age, fitness_data_4yo_elk)
 summary(condition_by_age_corr_elk) #r2 = 0.001, p = 0.781
@@ -214,26 +224,28 @@ elk_condition_norm <- ggplot(fitness_data_4yo_elk, aes(condition)) +
   theme(axis.title = element_text(size = 20)) +
   theme(axis.text = element_text(size = 15)) +
   xlab(expression(Condition~(g/cm^{"3"}))) + 
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(axis.title.y = element_blank()) 
 
 condition_norm_elk <- shapiro.test(fitness_data_4yo_elk$condition)
 #p = 0.181, W = 0.973
 
-pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/hfc_plots/condition_check_plots.pdf", width = 13, height = 10)
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/hfc_plots/condition_check_plots.pdf", width = 13, height = 12)
 
 plot_grid(global_mass_tl, 
-         global_age_condition, 
-         global_condition_norm,
-         bsug_mass_tl, 
-         bsug_age_condition, 
-         bsug_condition_norm,
-         elk_mass_tl, 
-         elk_age_condition, 
-         elk_condition_norm,
-         nrow = 3,
-         labels = c("a","b","c","d","e","f","g","h","i"),
-         label_size = 25,
-         label_y = 1.04)
+          bsug_mass_tl,
+          elk_mass_tl,
+          global_age_condition, 
+          bsug_age_condition,
+          elk_age_condition,
+          global_condition_norm,
+          bsug_condition_norm,
+          elk_condition_norm,
+          nrow = 3,
+          labels = c("a","b","c","d","e","f","g","h","i"),
+          label_size = 25,
+          label_y = 1.04,
+          align = "v")
 
 dev.off()
 ```
@@ -326,10 +338,13 @@ global_het_fitness_plot <- ggplot(global_het_fitness, aes(x = het,y = condition)
 global_het_fitness <- global_het_fitness[-c(105),]
 
 global_het_fitness_lme <- lme(condition ~ het, random = ~1|sex, global_het_fitness)
+summary(global_het_fitness_lme)
 anova.lme(global_het_fitness_lme)
 r.squaredGLMM(global_het_fitness_lme)
-#p = 0.032, F = 4.75
+#p = 0.032, F = 4.75, R2 =0.035
 
+global_het_fitness_lm <- lm(condition ~ het, global_het_fitness)
+summary(global_het_fitness_lm)
 
 bsug_het_fitness_plot <- ggplot(bsug_het_fitness, aes(x = het, y = condition)) + 
   geom_point(size = 2.5) +
@@ -356,7 +371,7 @@ elk_het_fitness_plot <- ggplot(elk_het_fitness, aes(x = het, y = condition)) +
   geom_point(size = 2.5) +
   geom_smooth(method = "lm", se = F, color = "black") +
   theme_set(theme_cowplot(12)) +
-  labs(x = "Multilocus heterozygosity", y = "Body condition (g/cm3)") +
+  labs(x = "Standardized multilocus heterozygosity", y = "Body condition (g/cm3)") +
   theme(axis.title = element_text(size = 20)) +
   theme(axis.text = element_text(size = 15)) +
   scale_x_continuous(expand = c(0, 0), breaks = seq(0,1.5,0.1)) + 
@@ -382,6 +397,8 @@ plot_grid(global_het_fitness_plot,
 
 dev.off()
 
+
+global_het_fitness %>% arrange(desc(condition))
 
 ```
 

@@ -181,7 +181,7 @@ dist_nor_indivs_all <- ggplot(smbfit_hyb_status_proportions, aes(x = dist, y = p
   geom_point(size = 2.5) +
   geom_smooth(method = "lm", se = F, color = "black") +
   theme_set(theme_cowplot(12)) +
-  labs(x = "Average distance from DFA (m)", y = "Proportion northern (%)") +
+  labs(x = "Average distance from DFA (m)", y = "Proportion Northern (%)") +
   theme(axis.title = element_text(size = 20)) +
   theme(axis.text = element_text(size = 15)) +
   scale_x_continuous(expand = c(0, 0), breaks = seq(0,18000,4000)) + 
@@ -194,12 +194,12 @@ dist_nor_indivs_elk <- ggplot(smbfit_hyb_status_proportions_elk, aes(x = dist_fr
   geom_point(size = 2.5) +
   geom_smooth(method = "lm", se = F, color = "black") +
   theme_set(theme_cowplot(12)) +
-  labs(x = "Average distance from headwaters (m)", y = "Proportion northern (%)") +
+  labs(x = "Average distance from headwaters (m)", y = "Proportion Northern (%)") +
   theme(axis.title = element_text(size = 20)) +
   theme(axis.text = element_text(size = 15)) +
   scale_x_continuous(expand = c(0, 0), breaks = seq(0,12000,2000)) + 
   scale_y_continuous(expand = c(0, 0)) +
-  expand_limits(y = 0.45, x = 12000) +
+  expand_limits(y = 0.45, x = 11500) +
   theme(axis.title.x = element_text(margin = margin(t = 10))) +
   theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
 
@@ -207,7 +207,7 @@ dist_nor_indivs_bsug <- ggplot(smbfit_hyb_status_proportions_bsug, aes(x = dist,
   geom_point(size = 2.5) +
   geom_smooth(method = "lm", se = F, color = "black") +
   theme_set(theme_cowplot(12)) +
-  labs(x = "Average distance from DFA (m)", y = "Proportion northern (%)") +
+  labs(x = "Average distance from DFA (m)", y = "Proportion Northern (%)") +
   theme(axis.title = element_text(size = 20)) +
   theme(axis.text = element_text(size = 15)) +
   scale_x_continuous(expand = c(0, 0), breaks = seq(0,5500,1000)) + 
@@ -217,7 +217,7 @@ dist_nor_indivs_bsug <- ggplot(smbfit_hyb_status_proportions_bsug, aes(x = dist,
   theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
 
 
-pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/admixture_geo_plots/dist_proportion_plots.pdf", width = 5, height = 15)
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/admixture_geo_plots/dist_proportion_plots.pdf", width = 6, height = 15)
 
 plot_grid(dist_nor_indivs_all,
           dist_nor_indivs_bsug,
