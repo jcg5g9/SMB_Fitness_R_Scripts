@@ -17,7 +17,7 @@ library(bbmle)
 library(lme4)
 library(lmerTest)
 library(multcomp)
-
+citation("inbreedR")
 ```
 
 ## Read in and organize fitness data
