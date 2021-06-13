@@ -436,7 +436,7 @@ het_by_hybrid_status <- ggplot(het_fit_with_ref, aes(x = population, y = het, fi
   geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3) +
   geom_point(position = position_jitterdodge(), size = 3, color = "black", pch = 21, show.legend = F) +
   theme_set(theme_cowplot(12)) + 
-  labs(x = "River/Population", y = "Multilocus heterozygosity") +
+  labs(x = "River/Population", y = "Multi-locus heterozygosity") +
   scale_fill_manual(values = c("mediumpurple","deepskyblue2","deeppink2","grey","grey")) +
   theme(axis.title = element_text(size = 20)) +
   theme(axis.text = element_text(size = 15)) +
@@ -449,7 +449,7 @@ het_by_population <- ggplot(het_fit_with_ref, aes(x = population, y = het, fill 
   geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3) +
   geom_point(position = position_jitter(width = 0.1), size = 3, color = "black", pch = 21, show.legend = F) +
   theme_set(theme_cowplot(12)) + 
-  labs(x = "River/Population", y = "Multilocus heterozygosity") +
+  labs(x = "River/Population", y = "Multi-locus heterozygosity") +
   scale_fill_manual(values = c("grey","grey","grey","grey")) +
   theme(axis.title = element_text(size = 20)) +
   theme(axis.text = element_text(size = 15)) +
@@ -485,6 +485,15 @@ summary(het_all_with_ref_hyb_status_lm)
 
 post_het_ref_hyb_status <- glht(het_all_with_ref_hyb_status_lm, mcp(hyb_status = "Tukey"))
 summary(post_het_ref_hyb_status)
+
+het_fit_with_ref$concatenate <- paste(het_fit_with_ref$hyb_status, het_fit_with_ref$population)
+het_fit_with_ref <- het_fit_with_ref %>%
+  mutate(concatenate = factor(concatenate))
+
+
+het_all_with_ref_hyb_status_concatenate_lm <- lm(het ~ concatenate, het_fit_with_ref)
+post_het_ref_hyb_status_concatenate <- glht(het_all_with_ref_hyb_status_concatenate_lm, mcp(concatenate = "Tukey"))
+summary(post_het_ref_hyb_status_concatenate)
 
 ```
 
