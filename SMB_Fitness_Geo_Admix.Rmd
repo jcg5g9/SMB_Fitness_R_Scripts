@@ -59,7 +59,7 @@ elk_dist_prop_northern <- ggplot(smbfit_data_elk, aes(x = dist_from_hw, y = prop
   geom_point(size = 2.5) +
   geom_smooth(method = "lm", se = F, color = "black") +
   theme_set(theme_cowplot(12)) +
-  labs(x = "Distance from headwaters (m)", y = "Northern Ancestry (%)") +
+  labs(x = "Distance from headwaters (m)", y = "Northern cluster membership (%)") +
   theme(axis.title = element_text(size = 20)) +
   theme(axis.text = element_text(size = 15)) +
   scale_x_continuous(expand = c(0, 0), breaks = seq(0,12000,2000)) + 
@@ -73,7 +73,7 @@ bsug_dist_prop_northern <- ggplot(smbfit_data_bsug, aes(x = dist_from_df, y = pr
   geom_point(size = 2.5) +
   geom_smooth(method = "lm", se = F, color = "black") +
   theme_set(theme_cowplot(12)) +
-  labs(x = "Distance from DFA (m)", y = "Northern Ancestry (%)") +
+  labs(x = "Distance from DFA (m)", y = "Northern cluster membership (%)") +
   theme(axis.title = element_text(size = 20)) +
   theme(axis.text = element_text(size = 15)) +
   scale_x_continuous(expand = c(0, 0), breaks = seq(0,12000,1000)) + 
@@ -88,7 +88,7 @@ all_dist_prop_northern <- ggplot(smbfit_data_noNA, aes(x = dist_from_df, y = pro
   geom_point(size = 2.5) +
   geom_smooth(method = "lm", se = F, color = "black") +
   theme_set(theme_cowplot(12)) +
-  labs(x = "Distance from DFA (m)", y = "Northern Ancestry (%)") +
+  labs(x = "Distance from DFA (m)", y = "Northern cluster membership (%)") +
   theme(axis.title = element_text(size = 20)) +
   theme(axis.text = element_text(size = 15)) +
   scale_x_continuous(expand = c(0, 0), breaks = seq(0,18000,3000)) + 
@@ -110,7 +110,7 @@ nor_admix_by_river <- ggplot(smbfit_data_gen_plot, aes(x = river, y = prop_nor_n
   geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3) +
   geom_point(position = position_jitter(width = 0.2), size = 2, color = "black", pch = 21, show.legend = F) +
   theme_set(theme_cowplot(12)) + 
-  labs(x = "River", y = "Northern Ancestry (%)") +
+  labs(x = "River", y = "Northern cluster membership (%)") +
   scale_fill_manual(values = c("grey","grey")) +
   theme(axis.title = element_text(size = 20)) +
   theme(axis.text = element_text(size = 15)) +
