@@ -398,7 +398,157 @@ plot_grid(global_het_fitness_plot,
 dev.off()
 
 
-global_het_fitness %>% arrange(desc(condition))
+global_het_fitness_by_hybstatus_plot <- ggplot(global_het_fitness, aes(x = het,y = condition, fill = hyb_status)) + 
+  geom_point(size = 2.5, color = "black", pch = 21, show.legend = T) +
+  geom_smooth(data = global_het_fitness, aes(x = het, y = condition, color = hyb_status), show.legend = T, method = "lm", se=F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Multilocus heterozygosity", y = "Body condition (g/cm3)", fill = "Admixture Status", color = "Admixture Status") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  scale_fill_manual(values = c("mediumpurple","deepskyblue2","deeppink2")) +
+  scale_color_manual(values = c("mediumpurple","deepskyblue2","deeppink2")) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0,1.5,0.1)) + 
+  scale_y_continuous(expand = c(0, 0)) +
+  expand_limits(y = 0.01, x = 1.4) +
+  theme(legend.position = c(0.03,0.12)) +
+  theme(legend.title = element_text(face = "bold")) +
+  theme(legend.title = element_text(size = 15)) +
+  theme(legend.text = element_text(size = 15)) +
+  ylab(expression(Condition~(g/cm^{"3"}))) + 
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(axis.title.x = element_blank()) 
+
+
+bsug_het_fitness_by_hybstatus_plot <- ggplot(bsug_het_fitness, aes(x = het, y = condition, fill = hyb_status)) + 
+  geom_point(size = 2.5, color = "black", pch = 21, show.legend = F) +
+  geom_smooth(data = bsug_het_fitness, aes(x = het, y = condition, color = hyb_status), show.legend = F, method = "lm", se=F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Multilocus heterozygosity", y = "Body condition (g/cm3)") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  scale_fill_manual(values = c("mediumpurple","deepskyblue2","deeppink2")) +
+  scale_color_manual(values = c("mediumpurple","deepskyblue2","deeppink2")) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0,1.5,0.1)) + 
+  scale_y_continuous(expand = c(0, 0)) +
+  expand_limits(y = 0.01, x = 1.4) +
+  ylab(expression(Condition~(g/cm^{"3"}))) + 
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(axis.title.x = element_blank()) 
+
+
+elk_het_fitness_by_hybstatus_plot <- ggplot(elk_het_fitness, aes(x = het, y = condition, fill = hyb_status)) + 
+  geom_point(size = 2.5, color = "black", pch = 21, show.legend = F) +
+  geom_smooth(data = bsug_het_fitness, aes(x = het, y = condition, color = hyb_status), show.legend = F, method = "lm", se=F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Standardized multilocus heterozygosity", y = "Body condition (g/cm3)") +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  scale_fill_manual(values = c("mediumpurple","deepskyblue2","deeppink2")) +
+  scale_color_manual(values = c("mediumpurple","deepskyblue2","deeppink2")) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(0,1.5,0.1)) + 
+  scale_y_continuous(expand = c(0, 0)) +
+  expand_limits(y = 0.01, x = 1.4) +
+  ylab(expression(Condition~(g/cm^{"3"}))) + 
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) 
+  
+
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/hfc_plots/hfc_plots_by_hyb_status.pdf", width = 7, height = 15)
+
+plot_grid(global_het_fitness_by_hybstatus_plot,
+          bsug_het_fitness_by_hybstatus_plot,
+          elk_het_fitness_by_hybstatus_plot,
+          nrow = 3)
+
+dev.off()
+
+
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/hfc_plots/hfc_plots_all.pdf", width = 12, height = 15)
+
+plot_grid(global_het_fitness_plot,
+          global_het_fitness_by_hybstatus_plot,
+          bsug_het_fitness_plot,
+          bsug_het_fitness_by_hybstatus_plot,
+          elk_het_fitness_plot,
+          elk_het_fitness_by_hybstatus_plot,          
+          nrow = 3)
+
+dev.off()
+
+
+
+
+
+
+global_het_fitness_admix <- global_het_fitness %>%
+  filter(hyb_status == "Admixed")
+
+global_het_fitness_northern <- global_het_fitness %>%
+  filter(hyb_status == "Northern")
+
+global_het_fitness_neosho <- global_het_fitness %>%
+  filter(hyb_status == "Neosho")
+
+bsug_het_fitness_admix <- bsug_het_fitness %>%
+  filter(hyb_status == "Admixed")
+
+bsug_het_fitness_northern <- bsug_het_fitness %>%
+  filter(hyb_status == "Northern")
+
+bsug_het_fitness_neosho <- bsug_het_fitness %>%
+  filter(hyb_status == "Neosho")
+
+elk_het_fitness_admix <- elk_het_fitness %>%
+  filter(hyb_status == "Admixed")
+
+elk_het_fitness_northern<- elk_het_fitness %>%
+  filter(hyb_status == "Northern")
+
+elk_het_fitness_neosho<- elk_het_fitness %>%
+  filter(hyb_status == "Neosho")
+
+
+
+global_het_fitness_ancova <- lme(condition ~ het*hyb_status, random = ~1|sex, global_het_fitness)
+anova(global_het_fitness_ancova)
+
+bsug_het_fitness_ancova <- lme(condition ~ het*hyb_status, random = ~1|sex, bsug_het_fitness)
+anova(bsug_het_fitness_ancova)
+
+elk_het_fitness_ancova <- lme(condition ~ het*hyb_status, random = ~1|sex, elk_het_fitness)
+anova(elk_het_fitness_ancova)
+
+
+
+global_het_fitness_admix_lm <- lm(condition ~ het*hyb_status, global_het_fitness_admix)
+summary(global_het_fitness_admix_lm)
+
+global_het_fitness_northern_lm <- lm(condition ~ het, global_het_fitness_northern)
+summary(global_het_fitness_northern_lm)
+
+global_het_fitness_neosho_lm <- lm(condition ~ het, global_het_fitness_neosho)
+summary(global_het_fitness_neosho_lm)
+
+bsug_het_fitness_admix_lm <- lm(condition ~ het, bsug_het_fitness_admix)
+summary(bsug_het_fitness_admix_lm)
+
+bsug_het_fitness_northern_lm <- lm(condition ~ het, bsug_het_fitness_northern)
+summary(bsug_het_fitness_northern_lm)
+
+bsug_het_fitness_neosho_lm <- lm(condition ~ het, bsug_het_fitness_neosho)
+summary(bsug_het_fitness_neosho_lm)
+
+
+elk_het_fitness_admix_lm <- lm(condition ~ het, elk_het_fitness_admix)
+summary(elk_het_fitness_admix_lm)
+
+elk_het_fitness_northern_lm <- lm(condition ~ het, elk_het_fitness_northern)
+summary(elk_het_fitness_northern_lm)
+
+elk_het_fitness_neosho_lm <- lm(condition ~ het, elk_het_fitness_neosho)
+summary(elk_het_fitness_neosho_lm)
 
 ```
 
