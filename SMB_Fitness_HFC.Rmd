@@ -400,7 +400,7 @@ dev.off()
 
 global_het_fitness_by_hybstatus_plot <- ggplot(global_het_fitness, aes(x = het,y = condition, fill = hyb_status)) + 
   geom_point(size = 2.5, color = "black", pch = 21, show.legend = T) +
-  geom_smooth(data = global_het_fitness, aes(x = het, y = condition, color = hyb_status), show.legend = T, method = "lm", se=F) +
+  geom_smooth(data = global_het_fitness, aes(x = het, y = condition, color = hyb_status), show.legend = T, method = "lm", se=F, fullrange = T) +
   theme_set(theme_cowplot(12)) +
   labs(x = "Multilocus heterozygosity", y = "Body condition (g/cm3)", fill = "Admixture Status", color = "Admixture Status") +
   theme(axis.title = element_text(size = 20)) +
@@ -422,7 +422,7 @@ global_het_fitness_by_hybstatus_plot <- ggplot(global_het_fitness, aes(x = het,y
 
 bsug_het_fitness_by_hybstatus_plot <- ggplot(bsug_het_fitness, aes(x = het, y = condition, fill = hyb_status)) + 
   geom_point(size = 2.5, color = "black", pch = 21, show.legend = F) +
-  geom_smooth(data = bsug_het_fitness, aes(x = het, y = condition, color = hyb_status), show.legend = F, method = "lm", se=F) +
+  geom_smooth(data = bsug_het_fitness, aes(x = het, y = condition, color = hyb_status), show.legend = F, method = "lm", se=F, fullrange = T) +
   theme_set(theme_cowplot(12)) +
   labs(x = "Multilocus heterozygosity", y = "Body condition (g/cm3)") +
   theme(axis.title = element_text(size = 20)) +
@@ -440,7 +440,7 @@ bsug_het_fitness_by_hybstatus_plot <- ggplot(bsug_het_fitness, aes(x = het, y = 
 
 elk_het_fitness_by_hybstatus_plot <- ggplot(elk_het_fitness, aes(x = het, y = condition, fill = hyb_status)) + 
   geom_point(size = 2.5, color = "black", pch = 21, show.legend = F) +
-  geom_smooth(data = bsug_het_fitness, aes(x = het, y = condition, color = hyb_status), show.legend = F, method = "lm", se=F) +
+  geom_smooth(data = bsug_het_fitness, aes(x = het, y = condition, color = hyb_status), show.legend = F, method = "lm", se=F, fullrange = T) +
   theme_set(theme_cowplot(12)) +
   labs(x = "Standardized multilocus heterozygosity", y = "Body condition (g/cm3)") +
   theme(axis.title = element_text(size = 20)) +
@@ -455,6 +455,7 @@ elk_het_fitness_by_hybstatus_plot <- ggplot(elk_het_fitness, aes(x = het, y = co
   theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) 
   
 
+#Just the hybrid status HFCs together
 pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/hfc_plots/hfc_plots_by_hyb_status.pdf", width = 7, height = 15)
 
 plot_grid(global_het_fitness_by_hybstatus_plot,
@@ -465,6 +466,7 @@ plot_grid(global_het_fitness_by_hybstatus_plot,
 dev.off()
 
 
+# Overall HFCs along with the individual hybrid status HFCs
 pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/hfc_plots/hfc_plots_all.pdf", width = 12, height = 15)
 
 plot_grid(global_het_fitness_plot,
@@ -479,7 +481,9 @@ dev.off()
 
 
 
-
+ggplot(global_het_fitness, aes(x = hyb_status, y = condition)) +
+  geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3) +
+  geom_point(position = position_jitter(width = 0.1), size = 3, color = "black", pch = 21, show.legend = F)
 
 
 global_het_fitness_admix <- global_het_fitness %>%
@@ -519,36 +523,6 @@ anova(bsug_het_fitness_ancova)
 
 elk_het_fitness_ancova <- lme(condition ~ het*hyb_status, random = ~1|sex, elk_het_fitness)
 anova(elk_het_fitness_ancova)
-
-
-
-global_het_fitness_admix_lm <- lm(condition ~ het*hyb_status, global_het_fitness_admix)
-summary(global_het_fitness_admix_lm)
-
-global_het_fitness_northern_lm <- lm(condition ~ het, global_het_fitness_northern)
-summary(global_het_fitness_northern_lm)
-
-global_het_fitness_neosho_lm <- lm(condition ~ het, global_het_fitness_neosho)
-summary(global_het_fitness_neosho_lm)
-
-bsug_het_fitness_admix_lm <- lm(condition ~ het, bsug_het_fitness_admix)
-summary(bsug_het_fitness_admix_lm)
-
-bsug_het_fitness_northern_lm <- lm(condition ~ het, bsug_het_fitness_northern)
-summary(bsug_het_fitness_northern_lm)
-
-bsug_het_fitness_neosho_lm <- lm(condition ~ het, bsug_het_fitness_neosho)
-summary(bsug_het_fitness_neosho_lm)
-
-
-elk_het_fitness_admix_lm <- lm(condition ~ het, elk_het_fitness_admix)
-summary(elk_het_fitness_admix_lm)
-
-elk_het_fitness_northern_lm <- lm(condition ~ het, elk_het_fitness_northern)
-summary(elk_het_fitness_northern_lm)
-
-elk_het_fitness_neosho_lm <- lm(condition ~ het, elk_het_fitness_neosho)
-summary(elk_het_fitness_neosho_lm)
 
 ```
 
@@ -644,6 +618,102 @@ het_fit_with_ref <- het_fit_with_ref %>%
 het_all_with_ref_hyb_status_concatenate_lm <- lm(het ~ concatenate, het_fit_with_ref)
 post_het_ref_hyb_status_concatenate <- glht(het_all_with_ref_hyb_status_concatenate_lm, mcp(concatenate = "Tukey"))
 summary(post_het_ref_hyb_status_concatenate)
+
+```
+
+```{r}
+# Read in genetic data with inbreed R
+gen_data_all_refs <- read_csv("../../raw_data/genotype_data/genotype_files/smbfit_msat_genotypes_noHSYC_with_old_neosho.csv")
+
+all_ref_fit_data <- gen_data_all_refs[,(2:4)]
+all_ref_fit_data <- all_ref_fit_data %>%
+  mutate(hyb_status = factor(hyb_status),
+         pure_admix = factor(pure_admix),
+         population = factor(population))
+
+gen_data_with_all_refs <- gen_data_all_refs[,-c(2:4)]
+gen_data_with_all_refs <- column_to_rownames(gen_data_with_all_refs, "sample_id")
+
+gen_data_with_all_refs_inbreedr <- convert_raw(gen_data_with_all_refs)
+check_data(gen_data_with_all_refs_inbreedr)
+
+
+het_all_with_ref <- as.data.frame(sMLH(gen_data_with_all_refs_inbreedr))
+het_all_with_ref <- rownames_to_column(het_all_with_ref, "sample_id")
+het_all_with_ref <- het_all_with_ref %>%
+  mutate(sample_id = factor(sample_id))
+colnames(het_all_with_ref) <- c("sample_id","het")
+
+
+het_fit_with_all_ref <- cbind(all_ref_fit_data, het_all_with_ref)
+
+levels(het_fit_with_all_ref$population) <- gsub(" ", "\n", levels(het_fit_with_all_ref$population))
+
+het_by_hybrid_status_all_refs <- ggplot(het_fit_with_all_ref, aes(x = population, y = het, fill = hyb_status)) + 
+  geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3) +
+  geom_point(position = position_jitterdodge(), size = 3, color = "black", pch = 21, show.legend = F) +
+  theme_set(theme_cowplot(12)) + 
+  labs(x = "River/Population", y = "Multi-locus heterozygosity") +
+  scale_fill_manual(values = c("mediumpurple","deepskyblue2","deeppink2","grey","grey")) +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  theme(legend.position = c(0.75,0.2)) +
+  expand_limits(y = 1) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+
+het_by_population_all_refs <- ggplot(het_fit_with_all_ref, aes(x = population, y = het, fill = "grey")) + 
+  geom_boxplot(show.legend = F, outlier.shape = NA, alpha = 0.3) +
+  geom_point(position = position_jitter(width = 0.1), size = 3, color = "black", pch = 21, show.legend = F) +
+  theme_set(theme_cowplot(12)) + 
+  labs(x = "River/Population", y = "Multi-locus heterozygosity") +
+  scale_fill_manual(values = c("grey","grey","grey","grey")) +
+  theme(axis.title = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 15)) +
+  theme(legend.position = c(0.75,0.2)) +
+  expand_limits(y = 1) +
+  theme(axis.title.x = element_text(margin = margin(t = 10))) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+
+
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/hfc_plots/het_comparison_ref_pops.pdf", width = 8, height = 10)
+
+plot_grid(het_by_population_all_refs, 
+          het_by_hybrid_status_all_refs,
+          nrow = 2,
+          labels = c("a","b"),
+          label_size = 25,
+          align = "v",
+          label_y = 1.03)
+
+dev.off()
+
+## Run linear model
+het_all_with_all_ref_lm <- lm(het ~ population, het_fit_with_all_ref)
+summary(het_all_with_all_ref_lm)
+
+#overall p value < 0.001
+
+post_het_all_ref <- glht(het_all_with_all_ref_lm, mcp(population = "Tukey"))
+summary(post_het_all_ref)
+
+
+het_all_with_all_ref_hyb_status_lm <- lm(het ~ hyb_status, het_fit_with_all_ref)
+summary(het_all_with_all_ref_hyb_status_lm)
+
+#overall p value < 0.001
+
+post_het_all_ref_hyb_status <- glht(het_all_with_all_ref_hyb_status_lm, mcp(hyb_status = "Tukey"))
+summary(post_het_all_ref_hyb_status)
+
+het_fit_with_all_ref$concatenate <- paste(het_fit_with_all_ref$hyb_status, het_fit_with_all_ref$population)
+het_fit_with_all_ref <- het_fit_with_all_ref %>%
+  mutate(concatenate = factor(concatenate))
+
+
+het_all_with_all_ref_hyb_status_concatenate_lm <- lm(het ~ concatenate, het_fit_with_all_ref)
+post_het_all_ref_hyb_status_concatenate <- glht(het_all_with_all_ref_hyb_status_concatenate_lm, mcp(concatenate = "Tukey"))
+summary(post_het_all_ref_hyb_status_concatenate)
 
 ```
 
