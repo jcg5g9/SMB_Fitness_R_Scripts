@@ -54,6 +54,14 @@ smbfit_all_size_by_sex <- smbfit_data_size_dist %>%
 smbfit_all_size_by_hyb_status <- smbfit_data_size_dist %>%
   group_by(size_category, hyb_status) %>%
   count()
+
+smbfit_all_size_by_sex_by_river_for_ms <- smbfit_data_size_dist %>%
+  group_by(size_category, river, sex) %>%
+  count()
+
+smbfit_all_size_by_sex_by_river_for_ms <- smbfit_data_size_dist %>%
+  group_by(size_category, river, hyb_status) %>%
+  count()
 ```
 
 
