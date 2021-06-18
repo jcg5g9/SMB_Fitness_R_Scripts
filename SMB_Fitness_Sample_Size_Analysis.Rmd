@@ -4,14 +4,17 @@ author: "Joe Gunn"
 date: "12/15/2020"
 output: html_document
 ---
-# Libraries needed for analysis
+
+# Aim 1 - Sample Sizes
+
+## Libraries needed for analysis
 ```{r setup, include=FALSE}
 library(readxl)
 library(tidyverse)
 library(cowplot)
 ```
 
-# Read in raw working data
+## Read in raw working data
 ```{r}
 smbfit_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
 
@@ -64,7 +67,7 @@ smbfit_all_size_by_sex_by_river_for_ms <- smbfit_data_size_dist %>%
   count()
 ```
 
-
+## Make plots to show sample size distributions
 ```{r}
 
 #Get total number of samples per size category

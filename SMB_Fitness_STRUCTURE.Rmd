@@ -4,6 +4,7 @@ author: "Joe Gunn"
 date: "3/17/2021"
 output: html_document
 ---
+# Aim 3 - Genotype Analysis
 
 ## Libraries needed for analysis
 ```{r setup, include=FALSE, include = FALSE}
@@ -27,11 +28,9 @@ smbfit_genetics_metadata <- smbfit_genetics_metadata %>%
          pop = factor(pop))
 
 smbfit_genetics_metadata <- column_to_rownames(smbfit_genetics_metadata, "NA")
-
-
 ```
 
-
+## Read in, summarize, and plot structure data
 ```{r}
 #Gather data
 smbfit_sfiles <- list.files(path = "/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/raw_data/structure_data/no_hsyc_500K_1M", full.names=T)
@@ -65,10 +64,9 @@ dev.off()
 #Run clumpp
 ```{r}
 clumppExport(smbfit_slist, parammode = 3, paramrep = 10000, useexe=T)
-
 ```
 
-
+## Plot q-values
 ```{r}
 smbfit_K2 <- readQ("../structure_analysis/smbfit_K2_nohsyc.txt")
 

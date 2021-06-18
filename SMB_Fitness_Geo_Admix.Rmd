@@ -4,6 +4,7 @@ author: "Joe Gunn"
 date: "6/4/2021"
 output: html_document
 ---
+# Aim 4 - Admixture Analysis on a geographic gradient
 
 ## Libraries needed for analysis
 ```{r setup, include=FALSE}
@@ -15,10 +16,9 @@ library(bbmle)
 library(MuMIn)
 library(lme4)
 library(car)
-
 ```
 
-# Read in raw working data
+## Read in raw working data
 ```{r}
 smbfit_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
 
@@ -43,13 +43,11 @@ smbfit_data_noNA <- smbfit_data %>%
   drop_na(log_dist_from_df)
 
 ##df means "Deep Ford Access Area"
-
 smbfit_data_elk <- smbfit_data_noNA %>%
   filter(river == "ELK")
 
 smbfit_data_bsug <- smbfit_data_noNA %>%
   filter(river == "BSUG")
-
 ```
 
 ## Plot proportion of northern ancestry as a function of distance from origin

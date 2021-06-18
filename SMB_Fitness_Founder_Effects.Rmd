@@ -4,7 +4,9 @@ author: "Joe Gunn"
 date: "6/10/2021"
 output: html_document
 ---
+# Aim 6 - Founder effects
 
+## Libraries needed for analysis
 ```{r setup, include=FALSE}
 library(readxl)
 library(tidyverse)

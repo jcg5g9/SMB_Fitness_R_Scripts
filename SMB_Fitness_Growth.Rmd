@@ -4,6 +4,7 @@ author: "Joe Gunn"
 date: "3/17/2021"
 output: html_document
 ---
+# Aim 2 - Individual Growth
 
 ## Libraries needed for analysis
 ```{r, include=FALSE}
@@ -54,7 +55,7 @@ smbfit_age_data_clean_actual <- smbfit_age_data_clean_noNA %>%
   filter(estimate=="actual")
 
 ```
-
+## Growth for the Global dataset
 ```{r}
 ## Fit one global model to the entire set of samples to get overall growth between the two rivers.
 
@@ -852,17 +853,7 @@ ggplot() +
   scale_alpha(guide = 'none')
 
 dev.off()
-
-
 ```
-
-
-
-
-  
-
-
-
 
 
 ## Here I will attempt to do two replicated growth curves, one for Elk River and one for Big Sugar Creek, running separate curves for each sex within each river.
@@ -884,7 +875,6 @@ smbfit_age_elk_male <- smbfit_age_elk %>%
 
 smbfit_age_elk_female <- smbfit_age_elk %>%
   filter(sex =="Female")
-
 ```
 
 ## Fit models to sexes WITHIN BIG SUGAR CREEK 
@@ -970,7 +960,6 @@ preds1_obs_all_bsug_sexes <- rbind(preds1_obs_bsug_male,
 
 ```
 
-
 ## Fit models to sexes WITHIN ELK RIVER
 ```{r}
 
@@ -1053,6 +1042,7 @@ preds1_obs_all_elk_sexes <- rbind(preds1_obs_elk_male,
                         preds1_obs_elk_female)
 
 ```
+
 
 ```{r}
 

@@ -4,6 +4,7 @@ author: "Joe Gunn"
 date: "6/6/2021"
 output: html_document
 ---
+# Aim 5 - Heterozygosity-fitness correlations
 
 ## Read in libraries needed for analysis
 ```{r, include=FALSE}
@@ -250,7 +251,7 @@ plot_grid(global_mass_tl,
 dev.off()
 ```
 
-##Read in genetic data, and convert to inbreedR format for the global dataset, the big sugar dataset, and the elk river dataset
+## Read in genetic data, and convert to inbreedR format for the global dataset, the big sugar dataset, and the elk river dataset
 ```{r}
 # Read in genetic data with inbreed R
 gen_data <- read_csv("../../raw_data/genotype_data/genotype_files/smbfit_msat_genotypes_noHSYC.csv")
@@ -621,6 +622,7 @@ summary(post_het_ref_hyb_status_concatenate)
 
 ```
 
+## Use all Neosho and Northern reference individuals
 ```{r}
 # Read in genetic data with inbreed R
 gen_data_all_refs <- read_csv("../../raw_data/genotype_data/genotype_files/smbfit_msat_genotypes_noHSYC_with_old_neosho.csv")
@@ -716,6 +718,7 @@ post_het_all_ref_hyb_status_concatenate <- glht(het_all_with_all_ref_hyb_status_
 summary(post_het_all_ref_hyb_status_concatenate)
 
 ```
+## Here I am going to run all of the analyses assuming that I can keep all of my data, including the large, old samples
 
 ## Keep all ages in the data
 ```{r}
