@@ -399,15 +399,20 @@ plot_grid(global_het_fitness_plot,
 dev.off()
 
 
-global_het_fitness_by_hybstatus_plot <- ggplot(global_het_fitness, aes(x = het,y = condition, fill = hyb_status)) + 
-  geom_point(size = 2.5, color = "black", pch = 21, show.legend = T) +
-  geom_smooth(data = global_het_fitness, aes(x = het, y = condition, color = hyb_status), show.legend = T, method = "lm", se=F, fullrange = T) +
+global_het_fitness_by_hybstatus_plot <- ggplot() + 
+  geom_point(data = global_het_fitness_admix, size = 3, aes(x = het, y = condition, group = hyb_status, fill = hyb_status, shape = hyb_status), color = "black", pch = 21, show.legend = T) +
+  geom_smooth(data = global_het_fitness_admix, aes(x = het, y = condition, color = hyb_status), show.legend = T, method = "lm", se=F, fullrange = T) +
+  geom_point(data = global_het_fitness_neosho, size = 3, aes(x = het, y = condition, group = hyb_status, fill = hyb_status, shape = hyb_status), color = "black", pch = 22, show.legend = T) +
+  geom_smooth(data = global_het_fitness_neosho, aes(x = het, y = condition, color = hyb_status), show.legend = T, method = "lm", se=F, fullrange = T) +
+  geom_point(data = global_het_fitness_northern, size = 3, aes(x = het, y = condition, group = hyb_status, fill = hyb_status, shape = hyb_status), color = "black", pch = 24, show.legend = T) +
+  geom_smooth(data = global_het_fitness_northern, aes(x = het, y = condition, color = hyb_status), show.legend = T, method = "lm", se=F, fullrange = T) +
   theme_set(theme_cowplot(12)) +
   labs(x = "Multilocus heterozygosity", y = "Body condition (g/cm3)", fill = "Admixture Status", color = "Admixture Status") +
   theme(axis.title = element_text(size = 20)) +
   theme(axis.text = element_text(size = 15)) +
   scale_fill_manual(values = c("mediumpurple","deepskyblue2","deeppink2")) +
   scale_color_manual(values = c("mediumpurple","deepskyblue2","deeppink2")) +
+  scale_shape_manual(values = c("circle","square","triangle")) +
   scale_x_continuous(expand = c(0, 0), breaks = seq(0,1.5,0.1)) + 
   scale_y_continuous(expand = c(0, 0)) +
   expand_limits(y = 0.01, x = 1.4) +
@@ -422,14 +427,19 @@ global_het_fitness_by_hybstatus_plot <- ggplot(global_het_fitness, aes(x = het,y
 
 
 bsug_het_fitness_by_hybstatus_plot <- ggplot(bsug_het_fitness, aes(x = het, y = condition, fill = hyb_status)) + 
-  geom_point(size = 2.5, color = "black", pch = 21, show.legend = F) +
-  geom_smooth(data = bsug_het_fitness, aes(x = het, y = condition, color = hyb_status), show.legend = F, method = "lm", se=F, fullrange = T) +
+    geom_point(data = bsug_het_fitness_admix, size = 3, aes(x = het, y = condition, group = hyb_status, fill = hyb_status, shape = hyb_status), color = "black", pch = 21, show.legend = F) +
+  geom_smooth(data = bsug_het_fitness_admix, aes(x = het, y = condition, color = hyb_status), show.legend = F, method = "lm", se=F, fullrange = T) +
+  geom_point(data = bsug_het_fitness_neosho, size = 3, aes(x = het, y = condition, group = hyb_status, fill = hyb_status, shape = hyb_status), color = "black", pch = 22, show.legend = F) +
+  geom_smooth(data = bsug_het_fitness_neosho, aes(x = het, y = condition, color = hyb_status), show.legend = F, method = "lm", se=F, fullrange = T) +
+  geom_point(data = bsug_het_fitness_northern, size = 3, aes(x = het, y = condition, group = hyb_status, fill = hyb_status, shape = hyb_status), color = "black", pch = 24, show.legend = F) +
+  geom_smooth(data = bsug_het_fitness_northern, aes(x = het, y = condition, color = hyb_status), show.legend = F, method = "lm", se=F, fullrange = T) +
   theme_set(theme_cowplot(12)) +
   labs(x = "Multilocus heterozygosity", y = "Body condition (g/cm3)") +
   theme(axis.title = element_text(size = 20)) +
   theme(axis.text = element_text(size = 15)) +
   scale_fill_manual(values = c("mediumpurple","deepskyblue2","deeppink2")) +
   scale_color_manual(values = c("mediumpurple","deepskyblue2","deeppink2")) +
+  scale_shape_manual(values = c("circle","square","triangle")) +
   scale_x_continuous(expand = c(0, 0), breaks = seq(0,1.5,0.1)) + 
   scale_y_continuous(expand = c(0, 0)) +
   expand_limits(y = 0.01, x = 1.4) +
@@ -440,14 +450,19 @@ bsug_het_fitness_by_hybstatus_plot <- ggplot(bsug_het_fitness, aes(x = het, y = 
 
 
 elk_het_fitness_by_hybstatus_plot <- ggplot(elk_het_fitness, aes(x = het, y = condition, fill = hyb_status)) + 
-  geom_point(size = 2.5, color = "black", pch = 21, show.legend = F) +
-  geom_smooth(data = bsug_het_fitness, aes(x = het, y = condition, color = hyb_status), show.legend = F, method = "lm", se=F, fullrange = T) +
+  geom_point(data = elk_het_fitness_admix, size = 3, aes(x = het, y = condition, group = hyb_status, fill = hyb_status, shape = hyb_status), color = "black", pch = 21, show.legend = F) +
+  geom_smooth(data = elk_het_fitness_admix, aes(x = het, y = condition, color = hyb_status), show.legend = F, method = "lm", se=F, fullrange = T) +
+  geom_point(data = elk_het_fitness_neosho, size = 3, aes(x = het, y = condition, group = hyb_status, fill = hyb_status, shape = hyb_status), color = "black", pch = 22, show.legend = F) +
+  geom_smooth(data = elk_het_fitness_neosho, aes(x = het, y = condition, color = hyb_status), show.legend = F, method = "lm", se=F, fullrange = T) +
+  geom_point(data = elk_het_fitness_northern, size = 3, aes(x = het, y = condition, group = hyb_status, fill = hyb_status, shape = hyb_status), color = "black", pch = 24, show.legend = F) +
+  geom_smooth(data = elk_het_fitness_northern, aes(x = het, y = condition, color = hyb_status), show.legend = F, method = "lm", se=F, fullrange = T) +
   theme_set(theme_cowplot(12)) +
   labs(x = "Standardized multilocus heterozygosity", y = "Body condition (g/cm3)") +
   theme(axis.title = element_text(size = 20)) +
   theme(axis.text = element_text(size = 15)) +
   scale_fill_manual(values = c("mediumpurple","deepskyblue2","deeppink2")) +
   scale_color_manual(values = c("mediumpurple","deepskyblue2","deeppink2")) +
+  scale_shape_manual(values = c("circle","square","triangle")) +
   scale_x_continuous(expand = c(0, 0), breaks = seq(0,1.5,0.1)) + 
   scale_y_continuous(expand = c(0, 0)) +
   expand_limits(y = 0.01, x = 1.4) +
@@ -455,6 +470,7 @@ elk_het_fitness_by_hybstatus_plot <- ggplot(elk_het_fitness, aes(x = het, y = co
   theme(axis.title.x = element_text(margin = margin(t = 10))) +
   theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) 
   
+
 
 #Just the hybrid status HFCs together
 pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/hfc_plots/hfc_plots_by_hyb_status.pdf", width = 7, height = 15)
