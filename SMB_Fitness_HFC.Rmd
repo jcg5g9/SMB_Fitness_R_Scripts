@@ -339,13 +339,18 @@ global_het_fitness_plot <- ggplot(global_het_fitness, aes(x = het,y = condition)
 global_het_fitness <- global_het_fitness[-c(105),]
 
 global_het_fitness_lme <- lme(condition ~ het, random = ~1|sex, global_het_fitness)
-summary(global_het_fitness_lme)
-anova.lme(global_het_fitness_lme)
-r.squaredGLMM(global_het_fitness_lme)
+
+
+global_het_fitness_lme_random <- lme(condition ~ het, random = list(river=~hyb_status, sex=~1), global_het_fitness)
+summary(global_het_fitness_lme_random)
+anova.lme(global_het_fitness_lme_random)
+r.squaredGLMM(global_het_fitness_lme_random)
 #p = 0.032, F = 4.75, R2 =0.035
 
-global_het_fitness_lm <- lm(condition ~ het, global_het_fitness)
-summary(global_het_fitness_lm)
+```
+
+
+```{r}
 
 bsug_het_fitness_plot <- ggplot(bsug_het_fitness, aes(x = het, y = condition)) + 
   geom_point(size = 2.5) +
