@@ -297,7 +297,6 @@ g2_elk <- g2_microsats(gen_data_elk_inbreedr, nperm = 1000, nboot = 1000, CI = 0
 
 ## Get heterozygosity measures per individual in each dataset
 ```{r}
-
 het_global <- as.data.frame(sMLH(gen_data_inbreedr))
 het_global <- rownames_to_column(het_global, "sample_id")
 het_global <- het_global %>%
@@ -320,6 +319,34 @@ colnames(het_elk) <- c("sample_id","het")
 global_het_fitness <- merge(het_global, fitness_data_4yo, by = "sample_id")
 bsug_het_fitness <- merge(het_bsug, fitness_data_4yo_bsug, by = "sample_id")
 elk_het_fitness <- merge(het_elk, fitness_data_4yo_elk, by = "sample_id")
+
+global_het_fitness <- global_het_fitness %>%
+  mutate(logWs = -5.329 + 3.200*log10(tl_alive)) %>%
+  mutate(Ws = 10^logWs) %>%
+  mutate(relW = mass_g/Ws)
+
+elk_het_fitness <- elk_het_fitness %>%
+  mutate(logWs = -5.329 + 3.200*log10(tl_alive)) %>%
+  mutate(Ws = 10^logWs) %>%
+  mutate(relW = mass_g/Ws)
+
+bsug_het_fitness <- bsug_het_fitness %>%
+  mutate(logWs = -5.329 + 3.200*log10(tl_alive)) %>%
+  mutate(Ws = 10^logWs) %>%
+  mutate(relW = mass_g/Ws)
+
+ggplot(global_het_fitness, aes(x=het, y=relW, color = hyb_status)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+
+ggplot(elk_het_fitness, aes(x=het, y=relW, color = hyb_status)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+
+ggplot(bsug_het_fitness, aes(x=het, y=relW, color = hyb_status)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+  
 ```
 
 ## plot condition by heterozygosity
