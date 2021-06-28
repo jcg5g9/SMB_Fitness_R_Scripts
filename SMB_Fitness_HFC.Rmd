@@ -316,11 +316,15 @@ het_elk <- het_elk %>%
   mutate(sample_id = factor(sample_id))
 colnames(het_elk) <- c("sample_id","het")
  
+#full datasets
 global_het_fitness <- merge(het_global, fitness_data_4yo, by = "sample_id")
 bsug_het_fitness <- merge(het_bsug, fitness_data_4yo_bsug, by = "sample_id")
 elk_het_fitness <- merge(het_elk, fitness_data_4yo_elk, by = "sample_id")
+```
 
-#plot condition by heterozygosity
+## plot condition by heterozygosity
+```{r}
+
 global_het_fitness_plot <- ggplot(global_het_fitness, aes(x = het,y = condition)) + 
   geom_point(size = 2.5) +
   geom_smooth(method = "lm", se = F, color = "black") +
@@ -347,10 +351,6 @@ anova.lme(global_het_fitness_lme_random)
 r.squaredGLMM(global_het_fitness_lme_random)
 #p = 0.032, F = 4.75, R2 =0.035
 
-```
-
-
-```{r}
 
 bsug_het_fitness_plot <- ggplot(bsug_het_fitness, aes(x = het, y = condition)) + 
   geom_point(size = 2.5) +
