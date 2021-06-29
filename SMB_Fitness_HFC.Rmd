@@ -335,17 +335,22 @@ bsug_het_fitness <- bsug_het_fitness %>%
   mutate(Ws = 10^logWs) %>%
   mutate(relW = mass_g/Ws)
 
-ggplot(global_het_fitness, aes(x=het, y=relW, color = hyb_status)) + 
+
+global_het_fitness <- global_het_fitness %>%
+  mutate(prop_nor_no_hsyc = as.numeric(prop_nor_no_hsyc))
+
+elk_het_fitness <- elk_het_fitness %>%
+  mutate(prop_nor_no_hsyc = as.numeric(prop_nor_no_hsyc))
+
+bsug_het_fitness <- bsug_het_fitness %>%
+  mutate(prop_nor_no_hsyc = as.numeric(prop_nor_no_hsyc))
+
+ggplot(elk_het_fitness, aes(x = het, y = prop_nor_no_hsyc)) +
   geom_point() +
   geom_smooth(method = "lm")
 
-ggplot(elk_het_fitness, aes(x=het, y=relW, color = hyb_status)) + 
-  geom_point() +
-  geom_smooth(method = "lm")
 
-ggplot(bsug_het_fitness, aes(x=het, y=relW, color = hyb_status)) + 
-  geom_point() +
-  geom_smooth(method = "lm")
+summary(lm(prop_nor_no_hsyc ~ het, elk_het_fitness))
   
 ```
 
