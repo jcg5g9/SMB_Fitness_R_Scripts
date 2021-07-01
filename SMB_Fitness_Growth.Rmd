@@ -7,7 +7,7 @@ output: html_document
 # Aim 2 - Individual Growth
 
 ## Libraries needed for analysis
-```{r, include=FALSE}
+```{r libraries}
 library(readxl)
 library(tidyverse)
 library(cowplot)
@@ -27,8 +27,6 @@ library(FSAdata)
 library(FSA) #v.0.8.32
 library(boot)
 library(car)
-
-citation("car")
 ```
 
 ## Read in and clean  data for analysis
@@ -36,12 +34,12 @@ citation("car")
 smbfit_raw_data <- read_excel("../../raw_data/master_data/smbfit_master_data_working.xlsx")
 smbfit_bc_raw_data <- read_excel("../../raw_data/backcalc_data/smbfit_bc_noHSYC.xlsx")
 
-smbfit_age_data <- smbfit_raw_data[,-c(1:4,6:11,13:17,19:23,25:31:33,35:40)]
+smbfit_age_data <- smbfit_raw_data[,-c(1:4,6:11,13:17,19:23,25:31:33,35:41)]
 smbfit_age_data$estimate <- factor(c(rep("actual",times=119)))
 
 smbfit_bc_data <- smbfit_bc_raw_data[-c(150:265),-c(1)]
 
-smbfit_age_data_clean <- rbind(smbfit_age_data,smbfit_bc_data)
+smbfit_age_data_clean <- rbind(smbfit_age_data, smbfit_bc_data)
 
 smbfit_age_data_clean <- smbfit_age_data_clean %>%
   mutate(river = factor(river),
@@ -496,6 +494,25 @@ vonbert_rivers <- ggplot() +
   theme(axis.title.x = element_blank()) +
   theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
 
+vonbert_rivers_elk <- ggplot() + 
+  geom_ribbon(data=preds1_all_rivers_elk, aes(x = age, ymin = LCI, ymax = UCI,fill = river, alpha=0.01,), show.legend = F) +
+  geom_point(data=smbfit_age_data_clean_actual_elk, aes(x = consensus_age, y = tl_alive, fill = river), show.legend = T, size=3, pch=21, position = position_jitter(width = 0.2)) + 
+  geom_line(data=preds1_all_rivers_elk, aes(x=age, y=fit, linetype = river)) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values=c("orchid1")) +
+  scale_y_continuous(name="Total Length (mm)",limits=c(0,520),expand=c(0,0)) +
+  scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
+  labs(fill = "River", linetype = "River") +
+  theme(axis.title = element_text(size = 20)) + 
+  theme(legend.position = c(0.6,0.2)) +
+  theme(legend.title = element_text(face="bold",size = 20)) +
+  theme(legend.text = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 16)) +
+  scale_alpha(guide = 'none') +
+  theme(axis.title.y = element_blank()) +
+  theme(axis.title.x = element_blank()) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+
 
 pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/growth_figures/all_von_berts.pdf", width = 15, height = 15)
 
@@ -504,6 +521,40 @@ plot_grid(vonbert_global,
           vonbert_sex,
           vonbert_admix_status,
           nrow = 2)
+
+dev.off()
+
+
+## Do some plotting for public dissertation defense
+preds1_all_rivers_elk <- preds1_all_rivers %>%
+  filter(river == "ELK")
+
+preds1_all_rivers_bsug <- preds1_all_rivers %>%
+  filter(river == "BSUG")
+
+smbfit_age_data_clean_actual_elk <- smbfit_age_data_clean_actual %>%
+   filter(river == "ELK")
+
+smbfit_age_data_clean_actual_bsug <- smbfit_age_data_clean_actual %>%
+   filter(river == "BSUG")
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/growth_figures/von_bert_elk_river.pdf", width = 8, height = 6)
+
+ggplot() + 
+  geom_ribbon(data=preds1_all_rivers_elk, aes(x = age, ymin = LCI, ymax = UCI,fill = river, alpha=0.01,), show.legend = F) +
+  geom_point(data=smbfit_age_data_clean_actual_elk, aes(x = consensus_age, y = tl_alive, fill = river), show.legend = F, size=3, pch=21, position = position_jitter(width = 0.2)) +
+  theme_set(theme_cowplot(12)) +
+  geom_line(data=preds1_all_rivers_elk, aes(x=age, y=fit, linetype = "longdash"), linetype = "dashed", show.legend = F) +
+  scale_fill_manual(values=c("sienna4")) +
+  scale_y_continuous(name="Total Length (mm)",limits=c(0,520),expand=c(0,0)) +
+  scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
+  labs(fill = "River", linetype = "River") +
+  theme(axis.title = element_text(size = 20)) + 
+  theme(legend.position = c(0.6,0.2)) +
+  theme(legend.title = element_text(face="bold",size = 20)) +
+  theme(legend.text = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 16)) +
+  scale_alpha(guide = 'none') +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
 
 dev.off()
 ```
@@ -853,6 +904,38 @@ ggplot() +
   scale_alpha(guide = 'none')
 
 dev.off()
+
+elk_preds1_all_smb_neosho_northern <- elk_preds1_all_smb %>%
+  filter(hyb_status ==c("Neosho","Northern"))
+
+smbfit_age_data_clean_actual_northern_neosho <- smbfit_age_data_clean_actual %>%
+  filter(hyb_status ==c("Neosho","Northern"))
+
+pdf("/Users/joegunn/Desktop/Grad_School_Stuff/Research/Projects/Smallmouth_Bass_Fitness/visualization/growth_figures/von_bert_gen_elk_neosho_northern.pdf", width = 6, height = 6)
+
+ggplot() + 
+  geom_ribbon(data=elk_preds1_all_smb_neosho_northern, aes(x = age, ymin = LCI, ymax = UCI, fill = hyb_status, alpha=0.01,), show.legend = F) +
+  geom_point(data=smbfit_age_data_clean_actual_northern_neosho,aes(x = consensus_age,y = tl_alive, fill = hyb_status), show.legend = F, size=3, pch=21, position = position_jitter(width = 0.3)) + 
+  geom_line(data=elk_preds1_all_smb_neosho_northern, aes(x=age, y=fit, linetype = hyb_status), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  theme(strip.background = element_rect(fill = "white")) +
+  theme(strip.text = element_text(size = 15)) +
+  theme(panel.background = element_rect(color = "black", fill = "white", size = 1, linetype = "solid")) +
+  theme(panel.margin = unit(1, "lines")) +
+  scale_fill_manual(values=c("deepskyblue","deeppink2")) +
+  scale_y_continuous(name="Total Length (mm)",limits=c(0,750),expand=c(0,0),breaks = seq(0,750,100)) +
+  scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
+  labs(fill = "Admixture Status", linetype = "Admixture Status") +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(legend.position = c(0.03,0.7)) +
+  theme(legend.title = element_text(face="bold",size = 15)) +
+  theme(legend.text = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 15)) +
+  theme(axis.text.y = element_blank()) +
+  scale_alpha(guide = 'none')
+
+dev.off()
+
 ```
 
 
