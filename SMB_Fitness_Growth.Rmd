@@ -23,7 +23,6 @@ library(pophelper)
 library(ggpubr)
 library(DescTools)
 library(gstudio)
-library(FSAdata)
 library(FSA) #v.0.8.32
 library(boot)
 library(car)
@@ -51,7 +50,6 @@ smbfit_age_data_clean_noNA <- smbfit_age_data_clean[-c(47:49,119),]
 
 smbfit_age_data_clean_actual <- smbfit_age_data_clean_noNA %>%
   filter(estimate=="actual")
-
 ```
 ## Growth for the Global dataset
 ```{r}
